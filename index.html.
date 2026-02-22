@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Cititor German-Român</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.8; background: #f4f7f6; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        
+        /* Stil pentru cuvintele pe care se poate da click */
+        .word { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: 0.2s; }
+        .word:hover { background-color: #d1ecf1; color: #0c5460; }
+        
+        /* Stil pentru fereastra de traducere (Popup) */
+        #translation-popup {
+            display: none; position: absolute; background: #333; color: white;
+            padding: 10px; border-radius: 8px; font-size: 14px; z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📰 Știri în Germană (Exemplu)</h2>
+    <div id="text-area">
+        Guten Tag! Das ist ein einfacher Text zum Lesen. Heute ist das Wetter sehr schön in Deutschland.
+    </div>
+</div>
+
+<div id="translation-popup">Se încarcă...</div>
+
+<script>
+    const textArea = document.getElementById('text-area');
+    const popup = document.getElementById('translation-popup');
+
+    // 1. Transformăm textul în cuvinte individuale pe care se poate da click
+    const originalText = textArea.innerText;
+    textArea.innerHTML = originalText.split(' ').map(word => `<span class="word">${word}</span>`).join(' ');
+
+    // 2. Adăugăm funcția de traducere la click
+    document.querySelectorAll('.word').forEach(wordElement => {
+        wordElement.addEventListener('click', function(e) {
+            const word = this.innerText.replace(/[.,!]/g, ''); // curățăm cuvântul de semne de punctuație
+            
+            // Poziționăm popup-ul lângă deget/mouse
+            popup.style.display = 'block';
+            popup.style.left = e.pageX + 'px';
+            popup.style.top = (e.pageY + 20) + 'px';
+            popup.innerText = "Se traduce: " + word + "...";
+
+            // 3. Trimitem cuvântul către un serviciu de traducere (folosim un link direct către Google)
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${word}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const traducere = data[0][0][0];
+                    popup.innerHTML = `<strong>${word}</strong> = <span style="color:#3498db">${traducere}</span>`;
+                })
+                .catch(() => {
+                    popup.innerText = "Eroare la traducere.";
+                });
+        });
+    });
+
+    // Închidem popup-ul dacă dăm click oriunde altundeva
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('word')) {
+            popup.style.display = 'none';
+        }
+    });
+</script>
+
+</body>
+</html>
