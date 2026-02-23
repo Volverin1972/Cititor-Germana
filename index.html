@@ -3,94 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana - Lectură și Teste</title>
+    <title>Germana Expert - Setări și Backup</title>
     <style>
+        :root { --bg-reader: #ffffff; --font-size: 20px; }
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; transition: 0.3s; }
+        
         #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 75px; background: #28a745; color: white; 
-                   display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 17px; }
+                   display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .section-title { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 10px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         
-        /* Grid Butoane Nivele */
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         .a1 { background: #4caf50; } .a2 { background: #009688; } .b1 { background: #ff9800; }
         .b2 { background: #e91e63; } .c1 { background: #673ab7; } .propriu { background: #007bff; }
         
-        /* Cititor */
-        #reader-area { line-height: 2.2; font-size: 20px; color: #1a1a1a; min-height: 100px; padding: 15px 0; white-space: pre-wrap; }
-        .word { cursor: pointer; padding: 2px 4px; border-radius: 4px; display: inline-block; }
+        #reader-area { line-height: 1.8; font-size: var(--font-size); background: var(--bg-reader); color: #1a1a1a; min-height: 120px; padding: 15px; border-radius: 8px; white-space: pre-wrap; transition: 0.2s; }
+        .word { cursor: pointer; padding: 2px 2px; border-radius: 4px; display: inline-block; }
         .active-word { background: #ccffcc !important; border-bottom: 2px solid #28a745; }
         
-        /* Butoane Audio */
         .btn-audio { width: 100%; padding: 16px; border-radius: 8px; margin-top: 10px; font-weight: bold; border: none; font-size: 16px; }
         .play-mode { background: #343a40; color: white; }
         .stop-mode { background: #dc3545; color: white; }
-        .mini-spk { background: white; color: #28a745; border: none; border-radius: 50%; width: 30px; height: 30px; margin-left: 10px; cursor: pointer; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; }
         
-        /* Liste Salvari */
-        .item-row { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #ddd; align-items: center; }
-        textarea, input { width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 12px; font-size: 15px; margin-top: 5px; }
+        /* SETĂRI */
+        .settings-panel { display: none; position: fixed; top: 80px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; }
+        .setting-row { margin-bottom: 15px; }
+        label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+        select, input[type="range"] { width: 100%; padding: 8px; border-radius: 5px; }
+
+        .item-row { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #ddd; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div id="top-bar">Apasă pe un buton pentru a începe</div>
+<div id="top-bar">
+    <span id="status-text">Lecții Germană</span>
+    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⚙️</button>
+</div>
+
+<div id="settings-panel" class="settings-panel">
+    <h3 style="margin-top:0">⚙️ Setări Program</h3>
+    
+    <div class="setting-row">
+        <label>Voce Germană:</label>
+        <select id="voice-select"></select>
+    </div>
+
+    <div class="setting-row">
+        <label>Viteză Redare: <span id="speed-val">1</span>x</label>
+        <input type="range" id="speed-slider" min="0.5" max="1.5" step="0.1" value="1" oninput="updateSpeedVal()">
+    </div>
+
+    <div class="setting-row">
+        <label>Mărime Font Cititor: <span id="font-val">20</span>px</label>
+        <input type="range" id="font-slider" min="14" max="32" step="2" value="20" oninput="updateFontSize()">
+    </div>
+
+    <div class="setting-row">
+        <label>Culoare Fundal Cititor:</label>
+        <div style="display:flex; gap:10px;">
+            <button onclick="changeTheme('#ffffff')" style="flex:1; height:30px; background:white; border:1px solid #ccc;"></button>
+            <button onclick="changeTheme('#f4ecd8')" style="flex:1; height:30px; background:#f4ecd8; border:1px solid #ccc;"></button>
+            <button onclick="changeTheme('#e0e0e0')" style="flex:1; height:30px; background:#e0e0e0; border:1px solid #ccc;"></button>
+        </div>
+    </div>
+
+    <hr>
+    <label>Siguranță Date (Backup):</label>
+    <div style="display:flex; gap:5px;">
+        <button class="btn propriu" style="flex:1; font-size:10px;" onclick="exportData()">📥 Exportă Datele</button>
+        <button class="btn propriu" style="flex:1; font-size:10px; background:#ff9800;" onclick="document.getElementById('import-file').click()">📤 Importă Datele</button>
+        <input type="file" id="import-file" class="hidden" onchange="importData(event)">
+    </div>
+
+    <button class="btn stop-mode" style="width:100%; margin-top:20px;" onclick="toggleSettings()">Închide Setări</button>
+</div>
 
 <div class="card">
-    <span class="section-title">Nivele Studiu</span>
+    <span class="section-title">Nivele & Adăugare</span>
     <div class="grid">
         <button class="btn a1" onclick="incarcaPreset('a1')">A1</button>
         <button class="btn a2" onclick="incarcaPreset('a2')">A2</button>
         <button class="btn b1" onclick="incarcaPreset('b1')">B1</button>
         <button class="btn b2" onclick="incarcaPreset('b2')">B2</button>
         <button class="btn c1" onclick="incarcaPreset('c1')">C1</button>
-        <button class="btn propriu" onclick="toggleSectiune('zona-adaugare')">+ ADAUGĂ</button>
+        <button class="btn propriu" onclick="toggleSectiune('zona-adaugare')">+ NOU</button>
     </div>
     
     <div id="zona-adaugare" class="hidden">
-        <input type="text" id="inp-titlu" placeholder="Titlu (ex: Poveste sau Test 1)">
-        <textarea id="inp-text" placeholder="Lipește textul pentru citit SAU cuvinte pentru test (Cuvant,Traducere)"></textarea>
-        <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="btn propriu" style="flex:1" onclick="salveaza('L')">Salvează Lectură</button>
-            <button class="btn propriu" style="flex:1; background:#673ab7" onclick="salveaza('T')">Salvează Test</button>
+        <input type="text" id="inp-titlu" placeholder="Titlu...">
+        <textarea id="inp-text" style="height:80px" placeholder="Text sau Cuvant,Traducere"></textarea>
+        <div style="display:flex; gap:5px; margin-top:5px;">
+            <button class="btn propriu" style="flex:1" onclick="salveaza('L')">Salvez Lectură</button>
+            <button class="btn propriu" style="flex:1; background:#673ab7" onclick="salveaza('T')">Salvez Test</button>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <span class="section-title">📂 Biblioteca și Testele Mele</span>
+    <span class="section-title">📂 Salvările Mele</span>
     <div id="lista-materiale"></div>
 </div>
 
 <div class="card">
-    <span class="section-title">📖 Cititor / Test Activ</span>
-    <div id="reader-area">Alege ceva de mai sus pentru a începe...</div>
-    <button id="main-audio-btn" class="btn-audio play-mode hidden" onclick="controlAudio()">🔊 Ascultă Textul Complet</button>
+    <span class="section-title">📖 Cititor / Test</span>
+    <div id="reader-area">Selectează un text...</div>
+    <button id="main-audio-btn" class="btn-audio play-mode hidden" onclick="controlAudio()">🔊 Ascultă Tot</button>
 </div>
 
 <script>
     let synth = window.speechSynthesis;
     let textCurent = "";
-    const preset = { 
-        'a1': "Hallo! Ich bin Thomas. Ich lerne Deutsch und wohne in Berlin.", 
-        'a2': "Gestern war das Wetter schön, also bin ich im Park spazieren gegangen.",
-        'b1': "Ich bereite mich auf die Prüfung vor, um meine Sprachkenntnisse zu verbessern.",
-        'b2': "Die Digitalisierung bietet viele Vorteile, bringt aber auch Herausforderungen mit sich.",
-        'c1': "Die ökonomische Entwicklung erfordert eine tiefgreifende Analyse der Marktstrukturen."
+    let voices = [];
+
+    window.onload = () => {
+        refreshLista();
+        loadVoices();
+        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
     };
 
-    window.onload = refreshLista;
-
+    function toggleSettings() { let p = document.getElementById('settings-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
     function toggleSectiune(id) { document.getElementById(id).classList.toggle('hidden'); }
 
-    function incarcaPreset(n) { 
-        afiseaza(preset[n]); 
-        document.getElementById('top-bar').innerText = "Nivel " + n.toUpperCase();
+    // --- SETĂRI ---
+    function loadVoices() {
+        voices = synth.getVoices().filter(v => v.lang.includes('de'));
+        const select = document.getElementById('voice-select');
+        select.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
     }
 
+    function updateSpeedVal() { document.getElementById('speed-val').innerText = document.getElementById('speed-slider').value; }
+    function updateFontSize() { 
+        let val = document.getElementById('font-slider').value;
+        document.getElementById('font-val').innerText = val;
+        document.documentElement.style.setProperty('--font-size', val + 'px');
+    }
+    function changeTheme(color) { document.documentElement.style.setProperty('--bg-reader', color); }
+
+    // --- LOGICĂ ---
     function afiseaza(t) {
         textCurent = t;
         document.getElementById('reader-area').innerHTML = t.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
@@ -105,100 +159,101 @@
         fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${c}`)
             .then(r => r.json()).then(data => {
                 let trad = data[0][0][0];
-                document.getElementById('top-bar').innerHTML = `<b>${c}</b> = ${trad} <button class="mini-spk" onclick="redaSf('${c}')">🔊</button>`;
+                document.getElementById('status-text').innerHTML = `${c} = ${trad} <button onclick="redaSf('${c}')" style="background:white; border:none; border-radius:50%; width:25px; height:25px; cursor:pointer">🔊</button>`;
             });
     }
 
     function salveaza(tip) {
-        const t = document.getElementById('inp-titlu').value || "Material Nou";
+        const t = document.getElementById('inp-titlu').value || "Nou";
         const c = document.getElementById('inp-text').value;
         if(!c) return;
         let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
         db.push({ titlu: t, continut: c, tip: tip });
         localStorage.setItem('mea_data', JSON.stringify(db));
-        document.getElementById('inp-titlu').value = "";
-        document.getElementById('inp-text').value = "";
         refreshLista(); toggleSectiune('zona-adaugare');
     }
 
     function refreshLista() {
         const cont = document.getElementById('lista-materiale');
         let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        if(db.length === 0) { cont.innerHTML = "<p style='color:#999; font-size:12px;'>Nu ai materiale salvate.</p>"; return; }
         cont.innerHTML = db.map((item, i) => `
             <div class="item-row">
-                <span onclick="deschide(${i})" style="cursor:pointer; flex:1;"><b>${item.tip == 'L' ? '📄' : '🧠'} ${item.titlu}</b></span>
-                <span onclick="sterge(${i})" style="color:#dc3545; cursor:pointer; font-weight:bold; padding:5px;">X</span>
+                <span onclick="deschide(${i})" style="cursor:pointer"><b>${item.tip == 'L' ? '📄' : '🧠'} ${item.titlu}</b></span>
+                <span onclick="sterge(${i})" style="color:red; cursor:pointer">X</span>
             </div>
         `).join('');
     }
 
     function deschide(i) {
         let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        let itm = db[i];
-        if(itm.tip == 'L') {
-            afiseaza(itm.continut);
-            document.getElementById('top-bar').innerText = itm.titlu;
-        } else {
-            runTest(itm.continut, itm.titlu);
-        }
+        if(db[i].tip == 'L') afiseaza(db[i].continut);
+        else runTest(db[i].continut);
     }
 
-    function runTest(raw, titlu) {
-        let perechi = raw.split('\n').map(l => l.split(',')).filter(x => x.length==2);
-        if(perechi.length === 0) { alert("Format test incorect! Folosește: Cuvant,Traducere"); return; }
-        let scor = 0;
-        document.getElementById('reader-area').innerHTML = "<h3>Test: " + titlu + "</h3><p>Raspunde la intrebari in ferestrele pop-up.</p>";
-        document.getElementById('main-audio-btn').classList.add('hidden');
-        
-        setTimeout(() => {
-            perechi.forEach(q => {
-                let r = prompt("Cum se traduce în Română: " + q[0].trim());
-                if(r && r.toLowerCase().trim() == q[1].toLowerCase().trim()) {
-                    alert("Corect! ✅");
-                    scor++;
-                } else {
-                    alert("Greșit. Răspunsul corect era: " + q[1].trim());
-                }
-            });
-            alert("Test finalizat! Scor: " + scor + "/" + perechi.length);
-            document.getElementById('reader-area').innerHTML = "Scor final: " + scor + "/" + perechi.length;
-        }, 500);
+    function runTest(raw) {
+        let p = raw.split('\n').map(l => l.split(',')).filter(x => x.length==2);
+        let s = 0;
+        p.forEach(q => {
+            let r = prompt("Tradu: " + q[0]);
+            if(r && r.toLowerCase().trim() == q[1].toLowerCase().trim()) s++;
+        });
+        alert("Scor Final: " + s + "/" + p.length);
     }
 
     function sterge(i) {
-        if(confirm("Ștergi acest material?")) {
-            let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-            db.splice(i, 1);
-            localStorage.setItem('mea_data', JSON.stringify(db));
-            refreshLista();
-        }
+        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        db.splice(i, 1);
+        localStorage.setItem('mea_data', JSON.stringify(db));
+        refreshLista();
     }
 
-    function redaSf(c) { synth.cancel(); let u = new SpeechSynthesisUtterance(c); u.lang = 'de-DE'; synth.speak(u); }
-    
+    // --- AUDIO ---
+    function redaSf(c) {
+        stopAudio();
+        let u = new SpeechSynthesisUtterance(c);
+        u.voice = voices[document.getElementById('voice-select').value];
+        u.rate = document.getElementById('speed-slider').value;
+        u.lang = 'de-DE';
+        synth.speak(u);
+    }
+
     function controlAudio() {
-        if(synth.speaking) {
-            synth.cancel();
-            resetAudioBtn();
-        } else {
+        if(synth.speaking) stopAudio();
+        else {
             let u = new SpeechSynthesisUtterance(textCurent);
+            u.voice = voices[document.getElementById('voice-select').value];
+            u.rate = document.getElementById('speed-slider').value;
             u.lang = 'de-DE';
-            u.onstart = () => {
-                let b = document.getElementById('main-audio-btn');
-                b.innerHTML = "⏹ Oprește Citirea";
-                b.className = "btn-audio stop-mode";
-            };
-            u.onend = resetAudioBtn;
+            u.onstart = () => { document.getElementById('main-audio-btn').innerHTML = "⏹ Oprește"; document.getElementById('main-audio-btn').className = "btn-audio stop-mode"; };
+            u.onend = stopAudio;
             synth.speak(u);
         }
     }
+    function stopAudio() { synth.cancel(); let b = document.getElementById('main-audio-btn'); b.innerHTML = "🔊 Ascultă Tot"; b.className = "btn-audio play-mode"; }
 
-    function stopAudio() { synth.cancel(); resetAudioBtn(); }
-    function resetAudioBtn() {
-        let b = document.getElementById('main-audio-btn');
-        b.innerHTML = "🔊 Ascultă Textul Complet";
-        b.className = "btn-audio play-mode";
+    // --- BACKUP ---
+    function exportData() {
+        const data = localStorage.getItem('mea_data');
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'backup_germana.json';
+        a.click();
+    }
+
+    function importData(event) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            localStorage.setItem('mea_data', e.target.result);
+            refreshLista();
+            alert("Date importate cu succes!");
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+
+    function incarcaPreset(n) {
+        const p = { 'a1': "Hallo! Ich heiße Max. Ich komme aus München.", 'b1': "Es ist wichtig, jeden Tag ein bisschen zu üben.", 'c1': "Die ökonomische Lage erfordert neue Strategien." };
+        afiseaza(p[n] || "Text Nivel " + n);
     }
 </script>
 </body>
