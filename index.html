@@ -3,87 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Daily News & Stories</title>
+    <title>Germana Expert All-in-One</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 70px; }
-        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 65px; background: #28a745; color: white; 
-                   display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 5px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .section-title { font-size: 14px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; padding-top: 70px; }
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: #28a745; color: white; 
+                   display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 5px; text-align: center; }
+        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px; }
+        .btn-lvl { border: none; padding: 12px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .a1 { background: #28a745; } .b1 { background: #fd7e14; } .c1 { background: #6f42c1; } 
+        .test { background: #ffc107; color: black; } .stories { background: #007bff; }
         
-        /* Meniu știri */
-        .news-feed { display: flex; flex-direction: column; gap: 8px; }
-        .news-item { background: #eef2f7; border: none; padding: 15px; border-radius: 10px; text-align: left; cursor: pointer; border-left: 5px solid #007bff; }
-        .news-item:active { background: #d0d7e1; }
-        .news-title { font-weight: bold; display: block; font-size: 15px; color: #1a1a1a; }
-        .news-desc { font-size: 12px; color: #666; margin-top: 4px; display: block; }
+        /* News Styling */
+        .news-item { background: #f8f9fa; padding: 10px; margin-bottom: 8px; border-left: 4px solid #007bff; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .news-title { font-weight: bold; display: block; }
 
-        #reader-area { line-height: 1.8; font-size: 20px; color: #2c3e50; min-height: 100px; padding: 10px 0; }
-        .word { cursor: pointer; padding: 2px; border-radius: 4px; display: inline-block; border-bottom: 1px solid #eee; }
-        .word:active { background: #ffeb3b; color: #000; }
+        #reader-area { line-height: 1.8; font-size: 19px; color: #333; min-height: 100px; padding: 10px 0; }
+        .word { cursor: pointer; padding: 2px; border-radius: 3px; display: inline-block; }
+        .word:active { background: #ffeb3b; }
         
-        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 14px; border-radius: 8px; margin-top: 15px; font-weight: bold; display: none; }
-        .loader { text-align: center; padding: 20px; color: #007bff; font-weight: bold; }
+        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 12px; border-radius: 5px; margin-top: 10px; font-weight: bold; display: none; }
         .hidden { display: none; }
+        .section-label { font-size: 12px; font-weight: bold; color: #777; margin-bottom: 5px; display: block; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div id="top-bar">Apasă pe cuvinte pentru traducere</div>
+<div id="top-bar">Apasă pe un buton sau o știre</div>
 
-<div class="card" id="feed-container">
-    <span class="section-title">📰 Știri Live (Germania)</span>
-    <div id="news-status" class="loader">Se încarcă știrile proaspete...</div>
-    <div class="news-feed" id="news-feed"></div>
+<div class="card">
+    <span class="section-label">📚 Bibliotecă & Teste</span>
+    <div class="grid">
+        <button class="btn-lvl a1" onclick="incarcaText('a1')">Nivel A1</button>
+        <button class="btn-lvl b1" onclick="incarcaText('b1')">Nivel B1</button>
+        <button class="btn-lvl c1" onclick="incarcaText('c1')">Nivel C1</button>
+        <button class="btn-lvl stories" onclick="incarcaText('grimm')">📖 Povești Lungi</button>
+        <button class="btn-lvl test" onclick="pornesteTest()">QUIZ</button>
+        <button class="btn-lvl" style="background:#6c757d;" onclick="togglePropriu()">➕ Propriu</button>
+    </div>
+    
+    <div id="manual-input" class="hidden">
+        <textarea id="input-text" style="width:100%; height:80px;" placeholder="Lipește textul tău lung aici..."></textarea>
+        <button onclick="incarcaPropriu()" style="width:100%; margin-top:5px; padding:10px; background:#007bff; color:white; border:none; border-radius:5px;">Încarcă</button>
+    </div>
 </div>
 
 <div class="card">
-    <span class="section-title">📖 Lectură activă</span>
-    <div id="reader-area">Alege o știre de mai sus pentru a începe lectura...</div>
-    <button id="btn-audio" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul Complet</button>
+    <span class="section-label">📰 Știri Live Germania (Tagesschau)</span>
+    <div id="news-feed">Se încarcă știrile...</div>
 </div>
 
 <div class="card">
-    <span class="section-title">📓 Vocabular salvat</span>
+    <span class="section-label">📖 Lectură Activă</span>
+    <div id="reader-area">Selectează ceva de mai sus pentru a studia...</div>
+    <button id="btn-audio" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
+</div>
+
+<div class="card">
+    <span class="section-label">📓 Vocabular salvat</span>
     <ul id="vocab-list" style="padding:0; list-style:none;"></ul>
 </div>
 
 <script>
-    // Sursă de știri via RSS2JSON (preia știri reale de la Tagesschau sau DW)
-    const NEWS_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.tagesschau.de%2Fxml%2Frss2%2F";
+    const database = {
+        'a1': "Mein Tag ist sehr interessant. Ich stehe morgens um sieben Uhr auf. Ich trinke einen Kaffee und esse ein Brot mit Marmelade. Dann gehe ich zur Arbeit.",
+        'b1': "Verben mit trennbaren Präfixen sind wichtig. Ich bereite meine Präsentation vor. Ich lade meine Kollegen ein. Wir fangen pünktlich an und hören spät auf.",
+        'c1': "Die ökonomische Lage erfordert tiefgreifende Strukturreformen. Experten plädieren für eine Diversifizierung der Exportmärkte, um die Abhängigkeit zu verringern.",
+        'grimm': "Es war einmal eine kleine süße Dirne, die hatte jedermann lieb, der sie nur ansah, am allerliebsten aber ihre Großmutter, die wusste gar nicht, was sie alles dem Kinde geben sollte. Einmal schenkte sie ihm ein Käppchen von rotem Samt, und da es ihm so wohl stand und es nichts anderes mehr tragen wollte, hieß es nur das Rotkäppchen..."
+    };
 
-    async function incarcaStiri() {
-        try {
-            const res = await fetch(NEWS_URL);
-            const data = await res.json();
-            const feed = document.getElementById('news-feed');
-            document.getElementById('news-status').classList.add('hidden');
-            
-            data.items.slice(0, 5).forEach(item => {
-                let div = document.createElement('div');
-                div.className = "news-item";
-                // Combinăm titlul cu descrierea pentru a avea un text mai lung de citit
-                const textComplet = item.title + ". " + item.description.replace(/<[^>]*>?/gm, '');
-                
-                div.innerHTML = `
-                    <span class="news-title">${item.title}</span>
-                    <span class="news-desc">Apasă pentru a studia textul...</span>
-                `;
-                div.onclick = () => afiseaza(textComplet);
-                feed.appendChild(div);
-            });
-        } catch (e) {
-            document.getElementById('news-status').innerText = "Eroare la încărcarea știrilor.";
-        }
+    let vocabular = {};
+    let textCurent = "";
+
+    // 1. Încărcare Știri Live
+    async function fetchNews() {
+        const res = await fetch("https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.tagesschau.de%2Fxml%2Frss2%2F");
+        const data = await res.json();
+        const feed = document.getElementById('news-feed');
+        feed.innerHTML = "";
+        data.items.slice(0, 3).forEach(item => {
+            let div = document.createElement('div');
+            div.className = "news-item";
+            div.innerHTML = `<span class="news-title">${item.title}</span>`;
+            div.onclick = () => afiseaza(item.title + ". " + item.description.replace(/<[^>]*>?/gm, ''));
+            feed.appendChild(div);
+        });
     }
 
+    // 2. Funcții de afișare
+    function incarcaText(key) { afiseaza(database[key]); }
+    
     function afiseaza(txt) {
+        textCurent = txt;
         document.getElementById('btn-audio').style.display = "block";
-        window.currentText = txt;
         const area = document.getElementById('reader-area');
         area.innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
-        window.scrollTo({ top: document.getElementById('reader-area').offsetTop - 80, behavior: 'smooth' });
     }
 
     function tradu(el) {
@@ -93,27 +108,35 @@
             .then(r => r.json()).then(data => {
                 let trad = data[0][0][0];
                 document.getElementById('top-bar').innerHTML = `<b>${cuvant}</b> = ${trad}`;
-                salveazaVocab(cuvant, trad);
+                if(!vocabular[cuvant]) {
+                    vocabular[cuvant] = trad;
+                    let li = document.createElement('li');
+                    li.style = "background:#eee; padding:5px; margin-top:3px; border-radius:3px; display:flex; justify-content:space-between;";
+                    li.innerHTML = `<span>${cuvant}</span> <b>${trad}</b>`;
+                    document.getElementById('vocab-list').prepend(li);
+                }
             });
     }
 
-    function salveazaVocab(g, r) {
-        const list = document.getElementById('vocab-list');
-        let li = document.createElement('li');
-        li.style = "background:#f8f9fa; padding:8px; margin-bottom:5px; border-radius:5px; border-left:3px solid #28a745; display:flex; justify-content:space-between; font-size:14px;";
-        li.innerHTML = `<span>${g}</span> <span style="color:#666">${r}</span>`;
-        list.prepend(li);
-    }
-
     function vorbeste() {
-        let ut = new SpeechSynthesisUtterance(window.currentText);
+        let ut = new SpeechSynthesisUtterance(textCurent);
         ut.lang = 'de-DE';
         window.speechSynthesis.speak(ut);
     }
 
-    // Pornim încărcarea știrilor la deschidere
-    incarcaStiri();
-</script>
+    function togglePropriu() { document.getElementById('manual-input').classList.toggle('hidden'); }
+    function incarcaPropriu() { afiseaza(document.getElementById('input-text').value); }
+    
+    function pornesteTest() {
+        let keys = Object.keys(vocabular);
+        if(keys.length < 1) { alert("Salvează cuvinte întâi!"); return; }
+        let c = keys[Math.floor(Math.random() * keys.length)];
+        let r = prompt(`Cum se traduce: ${c}?`);
+        if(r) alert(r.toLowerCase() === vocabular[c].toLowerCase() ? "Corect!" : "Mai încearcă!");
+    }
 
+    fetchNews();
+</script>
 </body>
 </html>
+ 
