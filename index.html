@@ -2,117 +2,112 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cititor Germana Pro + Vocabular</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Germana Simplu</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 15px; background: #f0f2f5; margin-top: 75px; }
-        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 65px; background: #28a745; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-align: center; padding: 0 10px; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; padding-top: 70px; }
         
-        .level-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .btn-lvl { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
-        .btn-a1 { background: #28a745; } .btn-a2 { background: #17a2b8; }
-        .btn-b1 { background: #fd7e14; } .btn-b2 { background: #dc3545; }
-        .btn-c1 { background: #6f42c1; grid-column: span 2; }
-        
-        textarea { width: 100%; height: 60px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; box-sizing: border-box; margin-top: 10px; }
-        .btn-main { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-top: 10px; }
-        .btn-audio { background: #343a40; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-top: 15px; font-weight: bold; display: none; }
+        /* Bara de sus fixa */
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: #28a745; color: white; 
+                   display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 5px; text-align: center; }
 
-        .word { cursor: pointer; display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 19px; line-height: 1.6; }
-        .active-word { background-color: #28a745 !important; color: white !important; }
+        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        /* Stil Vocabular */
-        #vocab-list { margin-top: 10px; padding: 0; list-style: none; }
-        #vocab-list li { background: #e9ecef; margin-bottom: 5px; padding: 8px; border-radius: 6px; font-size: 16px; display: flex; justify-content: space-between; }
-        .btn-clear { background: #ffc107; color: #212529; font-size: 12px; padding: 5px; width: auto; margin-top: 10px; }
+        /* Butoane Nivele */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .btn-lvl { border: none; padding: 10px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+        .a1 { background: #28a745; } .a2 { background: #17a2b8; } .b1 { background: #fd7e14; }
+        .b2 { background: #dc3545; } .c1 { background: #6f42c1; } .manual { background: #007bff; }
+
+        textarea { width: 100%; height: 80px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px; padding: 8px; }
+        
+        /* Zona de citire */
+        #reader-area { line-height: 2; font-size: 18px; color: #333; min-height: 50px; }
+        .word { cursor: pointer; padding: 2px 4px; border-radius: 3px; display: inline-block; }
+        .word:active { background: #ffeb3b; }
+
+        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 12px; border-radius: 5px; margin-top: 10px; font-weight: bold; }
+        
+        /* Vocabular */
+        #vocab-list { padding: 0; list-style: none; margin-top: 10px; }
+        #vocab-list li { background: #eee; padding: 8px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div id="top-bar">Apasă pe cuvinte pentru traducere</div>
+<div id="top-bar">Apasă un cuvânt</div>
 
 <div class="card">
-    <h4>Alege Nivelul</h4>
-    <div class="level-grid">
-        <button class="btn-lvl btn-a1" onclick="incarcaLectie('a1')">A1</button>
-        <button class="btn-lvl btn-a2" onclick="incarcaLectie('a2')">A2</button>
-        <button class="btn-lvl btn-b1" onclick="incarcaLectie('b1')">B1</button>
-        <button class="btn-lvl btn-b2" onclick="incarcaLectie('b2')">B2</button>
-        <button class="btn-lvl btn-c1" onclick="incarcaLectie('c1')">C1 - Avansat</button>
+    <div class="grid">
+        <button class="btn-lvl a1" onclick="incarca('a1')">A1</button>
+        <button class="btn-lvl a2" onclick="incarca('a2')">A2</button>
+        <button class="btn-lvl b1" onclick="incarca('b1')">B1</button>
+        <button class="btn-lvl b2" onclick="incarca('b2')">B2</button>
+        <button class="btn-lvl c1" onclick="incarca('c1')">C1</button>
+        <button class="btn-lvl manual" onclick="incarcaPropriu()">Propriu</button>
     </div>
+    <textarea id="input-text" placeholder="Lipește textul tău aici..."></textarea>
 </div>
 
 <div class="card">
-    <textarea id="input-text" placeholder="Lipește text propriu..."></textarea>
-    <button class="btn-main" onclick="incarcaText()">Încarcă Text</button>
+    <div id="reader-area">Alege un nivel de sus...</div>
+    <button class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
 </div>
 
 <div class="card">
-    <div id="reader-area">Alege o lecție...</div>
-    <button id="audio-btn" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
-</div>
-
-<div class="card">
-    <h4>📓 Vocabularul meu</h4>
+    <strong>📓 Vocabular salvat:</strong>
     <ul id="vocab-list"></ul>
-    <button class="btn-main btn-clear" onclick="stergeVocabular()">Șterge Lista</button>
 </div>
 
 <script>
-    const biblioteca = {
-        'a1': "Mein Name ist Hans. Ich wohne in Berlin. Ich lerne Deutsch.",
-        'a2': "Gestern bin ich in die Stadt gegangen. Das Museum war sehr interessant.",
-        'b1': "Umweltfreundliche Energiequellen gewinnen immer mehr an Bedeutung.",
-        'b2': "In der heutigen Gesellschaft ist es unerlässlich, Medienkompetenz zu besitzen.",
-        'c1': "Die Komplexität der philosophischen Abhandlungen erfordert eine tiefgreifende Auseinandersetzung."
+    const biblio = {
+        'a1': "Hallo! Ich heiße Alex. Ich wohne in Deutschland und lerne jeden Tag Deutsch.",
+        'a2': "Gestern war ich im Supermarkt. Ich habe Brot, Milch und Obst gekauft. Es war sehr teuer.",
+        'b1': "Die Umwelt ist ein wichtiges Thema. Wir müssen weniger Plastik benutzen, um die Natur zu schützen.",
+        'b2': "Es ist wissenschaftlich bewiesen, dass regelmäßiges Lesen die kognitiven Fähigkeiten verbessert.",
+        'c1': "Die soziokulturelle Entwicklung der Moderne ist eng mit der industriellen Revolution verknüpft."
     };
 
-    let textCurent = "";
-    let vocabular = {};
+    let textDeCitit = "";
 
-    function incarcaLectie(id) { render(biblioteca[id]); }
-    function incarcaText() { const t = document.getElementById('input-text').value; if(t) render(t); }
+    function incarca(lvl) {
+        textDeCitit = biblio[lvl];
+        afiseaza(textDeCitit);
+    }
 
-    function render(text) {
-        textCurent = text;
-        document.getElementById('audio-btn').style.display = "block";
-        document.getElementById('reader-area').innerHTML = text.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
+    function incarcaPropriu() {
+        textDeCitit = document.getElementById('input-text').value;
+        if(textDeCitit) afiseaza(textDeCitit);
+    }
+
+    function afiseaza(txt) {
+        const area = document.getElementById('reader-area');
+        area.innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
     }
 
     function vorbeste() {
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = textCurent;
-        msg.lang = 'de-DE';
-        window.speechSynthesis.speak(msg);
+        if(!textDeCitit) return;
+        let ut = new SpeechSynthesisUtterance(textDeCitit);
+        ut.lang = 'de-DE';
+        window.speechSynthesis.speak(ut);
     }
 
     function tradu(el) {
-        document.querySelectorAll('.word').forEach(w => w.classList.remove('active-word'));
-        el.classList.add('active-word');
-        const c = el.innerText.replace(/[.,!?;:()]/g, '');
-        const bar = document.getElementById('top-bar');
+        let cuvant = el.innerText.replace(/[.,!?;:]/g, '');
+        document.getElementById('top-bar').innerText = "Traducere: " + cuvant + "...";
         
-        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${c}`)
-            .then(r => r.json()).then(d => {
-                const trad = d[0][0][0];
-                bar.innerHTML = `<strong>${c}</strong> = ${trad}`;
-                salveazaInVocabular(c, trad);
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${cuvant}`)
+            .then(r => r.json())
+            .then(data => {
+                let trad = data[0][0][0];
+                document.getElementById('top-bar').innerHTML = `<b>${cuvant}</b> = ${trad}`;
+                
+                // Adaugă în vocabular
+                let li = document.createElement('li');
+                li.innerHTML = `<span>${cuvant}</span> <b>${trad}</b>`;
+                document.getElementById('vocab-list').prepend(li);
             });
-    }
-
-    function salveazaInVocabular(germana, romana) {
-        vocabular[germana] = romana;
-        const lista = document.getElementById('vocab-list');
-        lista.innerHTML = "";
-        for (let cuvant in vocabular) {
-            lista.innerHTML += `<li><strong>${cuvant}</strong> <span>${vocabular[cuvant]}</span></li>`;
-        }
-    }
-
-    function stergeVocabular() {
-        vocabular = {};
-        document.getElementById('vocab-list').innerHTML = "";
     }
 </script>
 
