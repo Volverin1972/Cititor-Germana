@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert - Memorie Greșeli</title>
+    <title>Germana Expert - Versiune Blindată</title>
     <style>
         :root { --bg-reader: #ffffff; --font-size: 20px; --top-font-size: 17px; }
         * { box-sizing: border-box; }
@@ -19,51 +19,82 @@
         .wrong { background: #f8d7da !important; border-color: #dc3545 !important; }
         #reader-area { line-height: 1.6; font-size: var(--font-size); background: var(--bg-reader); min-height: 150px; padding: 15px; border-radius: 8px; }
         .settings-panel { display: none; position: fixed; top: 85px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 85vh; overflow-y: auto; }
-        .mistake-badge { background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
+        select, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div id="top-bar">
-    <span id="status-text">Lecție Personalizată</span>
+    <span id="status-text">Recuperare Date...</span>
     <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px;">⚙️</button>
 </div>
 
 <div id="settings-panel" class="settings-panel">
-    <h3>⚙️ Setări și Statistici</h3>
-    <div id="stat-area" style="margin-bottom:15px; font-size:14px; background:#f8f9fa; padding:10px; border-radius:8px;"></div>
-    <button class="btn" style="width:100%; background:#dc3545; margin-bottom:10px;" onclick="clearMistakes()">Golește Baza de Greșeli</button>
+    <h3 style="margin-top:0">⚙️ Setări și Siguranță</h3>
+    <div id="stat-area" style="margin-bottom:10px; font-size:14px;"></div>
+    
+    <div style="background:#e3f2fd; padding:10px; border-radius:8px; margin-bottom:10px;">
+        <label><b>Backup Manual:</b></label>
+        <button class="btn propriu" style="width:100%; margin:5px 0;" onclick="exportData()">Copiază tot codul de salvare</button>
+        <button class="btn btn-test" style="width:100%;" onclick="importData()">Lipește cod salvare (Restore)</button>
+    </div>
+
+    <label>Extinde Test existent:</label>
+    <select id="select-target-test"></select>
+    <textarea id="append-area" style="height:80px" placeholder="Intrebare | Corect | Gresit"></textarea>
+    <button class="btn btn-test" style="width:100%; margin-top:5px;" onclick="appendQuestions()">➕ ADAUGĂ ÎNTREBĂRI</button>
+    
     <hr>
-    <label>Test Destinație (pentru Extinde):</label>
-    <select id="select-target-test" style="width:100%; padding:10px; margin-bottom:10px;"></select>
-    <textarea id="append-area" style="width:100%; height:80px" placeholder="Intrebare | Corect | Gresit"></textarea>
-    <button class="btn btn-test" style="width:100%; margin-top:5px;" onclick="appendQuestions()">➕ EXTINDE TEST</button>
-    <button class="btn" style="width:100%; margin-top:15px; background:#343a40" onclick="toggleSettings()">ÎNCHIDE</button>
+    <button class="btn" style="width:100%; background:#dc3545; margin-bottom:10px;" onclick="clearMistakes()">Resetează Greșeli</button>
+    <button class="btn" style="width:100%; background:#343a40" onclick="toggleSettings()">ÎNCHIDE</button>
 </div>
 
-<div class="card">
+<div class="card" id="list-card">
     <div id="lista-materiale"></div>
 </div>
 
 <div class="card">
-    <div id="reader-area">Alege un test. Sistemul va include automat greșelile tale anterioare.</div>
+    <div id="reader-area">Așteaptă încărcarea datelor...</div>
 </div>
 
 <script>
     let allPool = [], currentSession = [], currentIdx = 0, score = 0, currentTitle = "";
 
-    window.onload = refreshLista;
+    window.onload = () => {
+        forțareRecuperare();
+        refreshLista();
+        document.getElementById('status-text').innerText = "Gata de lucru";
+        document.getElementById('reader-area').innerText = "Alege un test din lista de sus.";
+    };
+
+    function forțareRecuperare() {
+        // Căutăm date în toate locațiile posibile folosite anterior
+        let d1 = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        let d2 = JSON.parse(localStorage.getItem('germana_data') || '[]');
+        let d3 = JSON.parse(localStorage.getItem('app_data_v1') || '[]');
+        
+        let combinat = [...d1, ...d2, ...d3];
+        // Eliminăm duplicatele după titlu
+        let unic = combinat.filter((v,i,a)=>a.findIndex(t=>(t.titlu === v.titlu))===i);
+        
+        if (unic.length > 0) {
+            localStorage.setItem('mea_data_final', JSON.stringify(unic));
+        }
+    }
+
+    function getData() {
+        return JSON.parse(localStorage.getItem('mea_data_final') || '[]');
+    }
 
     function refreshLista() {
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        let db = getData();
         let gMistakes = JSON.parse(localStorage.getItem('global_mistakes') || '[]');
-        
-        document.getElementById('stat-area').innerHTML = `Întrebări în "Baza de Greșeli": <b>${gMistakes.length}</b>`;
+        document.getElementById('stat-area').innerHTML = `Teste salvate: <b>${db.length}</b> | Greșeli: <b>${gMistakes.length}</b>`;
         
         document.getElementById('lista-materiale').innerHTML = db.map((item, i) => `
             <div style="display:flex; justify-content:space-between; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:5px; border:1px solid #ddd;">
-                <span onclick="preparaSesiune(${i})" style="cursor:pointer; flex:1;"><b>🧠 ${item.titlu}</b> <small>(${item.continut.split('\n').filter(l=>l.includes('|')).length})</small></span>
-                <span onclick="sterge(${i})" style="color:red; cursor:pointer; font-weight:bold; padding-left:10px;">X</span>
+                <span onclick="preparaSesiune(${i})" style="cursor:pointer; flex:1;"><b>🧠 ${item.titlu}</b> (${item.continut.split('\n').filter(l=>l.includes('|')).length})</span>
+                <span onclick="sterge(${i})" style="color:red; cursor:pointer; font-weight:bold; padding:0 10px;">X</span>
             </div>
         `).join('');
         
@@ -72,7 +103,7 @@
     }
 
     function preparaSesiune(i) {
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        let db = getData();
         currentTitle = db[i].titlu;
         allPool = db[i].continut.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
@@ -84,25 +115,17 @@
     function alegeSiPorneste() {
         let gMistakes = JSON.parse(localStorage.getItem('global_mistakes') || '[]');
         allPool.sort(() => Math.random() - 0.5);
-        
         let sessionSet = [];
-        
-        // Luăm 2 greșeli din baza globală (dacă există)
         let fromMistakes = gMistakes.sort(() => Math.random() - 0.5).slice(0, 2);
         sessionSet.push(...fromMistakes);
-        
-        // Luăm restul până la 10 din bazinul normal
         let needed = 10 - sessionSet.length;
-        // Evităm duplicatele dacă o greșeală e deja în pool
         let freshOnes = allPool.filter(p => !sessionSet.some(m => m.q === p.q)).slice(0, needed);
         sessionSet.push(...freshOnes);
-        
         startNewRound(sessionSet.sort(() => Math.random() - 0.5));
     }
 
     function startNewRound(questions) {
-        currentSession = questions;
-        currentIdx = 0; score = 0;
+        currentSession = questions; currentIdx = 0; score = 0;
         showQuestion();
     }
 
@@ -111,8 +134,7 @@
         let item = currentSession[currentIdx];
         let shuffled = [...item.options].sort(() => Math.random() - 0.5);
         let qHtml = item.q.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
-        
-        let html = `<div><b>${currentTitle}</b><br><small>Întrebarea ${currentIdx+1}/10</small><br><br>${qHtml}</div><br>`;
+        let html = `<div><b>${currentTitle}</b><br><small>${currentIdx+1}/10</small><br><br>${qHtml}</div><br>`;
         shuffled.forEach(opt => {
             let optWords = opt.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
             html += `<div class="option-container"><div>${optWords}</div><button class="btn-check" onclick="checkAnswer(this.parentElement, '${opt}', '${item.correct}')">OK</button></div>`;
@@ -128,13 +150,11 @@
         if(sel === cor) {
             el.classList.add('correct'); score++;
             document.getElementById('status-text').innerText = "Corect! ✅";
-            // Dacă a fost o greșeală veche și acum e corectă, o scoatem din baza globală
             let newGM = gMistakes.filter(m => m.q !== currentQ.q);
             localStorage.setItem('global_mistakes', JSON.stringify(newGM));
         } else {
             el.classList.add('wrong');
             document.getElementById('status-text').innerText = "Greșit! ❌";
-            // Adăugăm în baza globală dacă nu e deja
             if(!gMistakes.some(m => m.q === currentQ.q)) {
                 gMistakes.push(currentQ);
                 localStorage.setItem('global_mistakes', JSON.stringify(gMistakes));
@@ -146,7 +166,7 @@
     function showFinal() {
         document.getElementById('reader-area').innerHTML = `
             <div style="text-align:center">
-                <h2>Rundă terminată: ${score}/10</h2>
+                <h2>Scor: ${score}/10</h2>
                 <button class="btn propriu" style="width:100%; margin-bottom:8px" onclick="alegeSiPorneste()">🚀 URMĂTOARELE 10 (incl. greșeli)</button>
                 <button class="btn btn-test" style="width:100%; margin-bottom:8px" onclick="startNewRound(currentSession)">🔄 REPETĂ ACEST SET</button>
                 <button class="btn" style="width:100%; background:grey" onclick="location.reload()">MENIU</button>
@@ -161,19 +181,33 @@
             });
     }
 
-    function clearMistakes() { if(confirm("Ștergi toate greșelile memorate?")) { localStorage.setItem('global_mistakes', '[]'); refreshLista(); } }
-    function toggleSettings() { let s = document.getElementById('settings-panel'); s.style.display = (s.style.display==='block'?'none':'block'); }
-    function sterge(i) { if(confirm("Ștergi testul?")) { let db = JSON.parse(localStorage.getItem('mea_data') || '[]'); db.splice(i, 1); localStorage.setItem('mea_data', JSON.stringify(db)); refreshLista(); } }
     function appendQuestions() {
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        let db = getData();
         let idx = document.getElementById('select-target-test').value;
         let noi = document.getElementById('append-area').value;
         if(!noi) return;
         db[idx].continut += "\n" + noi;
-        localStorage.setItem('mea_data', JSON.stringify(db));
+        localStorage.setItem('mea_data_final', JSON.stringify(db));
         document.getElementById('append-area').value = "";
-        refreshLista(); alert("Adăugat cu succes!");
+        refreshLista(); alert("Întrebări adăugate!");
     }
+
+    function exportData() {
+        let data = localStorage.getItem('mea_data_final');
+        prompt("Copiază acest cod și salvează-l într-o notiță (e backup-ul tău):", data);
+    }
+
+    function importData() {
+        let data = prompt("Lipește aici codul de backup:");
+        if(data) {
+            localStorage.setItem('mea_data_final', data);
+            refreshLista();
+        }
+    }
+
+    function sterge(i) { if(confirm("Ștergi testul?")) { let db = getData(); db.splice(i, 1); localStorage.setItem('mea_data_final', JSON.stringify(db)); refreshLista(); } }
+    function toggleSettings() { let s = document.getElementById('settings-panel'); s.style.display = (s.style.display==='block'?'none':'block'); }
+    function clearMistakes() { localStorage.setItem('global_mistakes', '[]'); refreshLista(); }
 </script>
 </body>
 </html>
