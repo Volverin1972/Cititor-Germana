@@ -1,44 +1,118 @@
-<!
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cititor Germana Pro + Vocabular</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 15px; background: #f0f2f5; margin-top: 75px; }
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 65px; background: #28a745; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-align: center; padding: 0 10px; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        
+        .level-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .btn-lvl { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+        .btn-a1 { background: #28a745; } .btn-a2 { background: #17a2b8; }
+        .btn-b1 { background: #fd7e14; } .btn-b2 { background: #dc3545; }
+        .btn-c1 { background: #6f42c1; grid-column: span 2; }
+        
+        textarea { width: 100%; height: 60px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; box-sizing: border-box; margin-top: 10px; }
+        .btn-main { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-top: 10px; }
+        .btn-audio { background: #343a40; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-top: 15px; font-weight: bold; display: none; }
+
+        .word { cursor: pointer; display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 19px; line-height: 1.6; }
+        .active-word { background-color: #28a745 !important; color: white !important; }
+        
+        /* Stil Vocabular */
+        #vocab-list { margin-top: 10px; padding: 0; list-style: none; }
+        #vocab-list li { background: #e9ecef; margin-bottom: 5px; padding: 8px; border-radius: 6px; font-size: 16px; display: flex; justify-content: space-between; }
+        .btn-clear { background: #ffc107; color: #212529; font-size: 12px; padding: 5px; width: auto; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="top-bar">Apasă pe cuvinte pentru traducere</div>
 
 <div class="card">
-    <textarea id="input-text" placeholder="Lipește aici textul în germană..."></textarea>
-    <button onclick="incarcaText()">Încarcă textul</button>
+    <h4>Alege Nivelul</h4>
+    <div class="level-grid">
+        <button class="btn-lvl btn-a1" onclick="incarcaLectie('a1')">A1</button>
+        <button class="btn-lvl btn-a2" onclick="incarcaLectie('a2')">A2</button>
+        <button class="btn-lvl btn-b1" onclick="incarcaLectie('b1')">B1</button>
+        <button class="btn-lvl btn-b2" onclick="incarcaLectie('b2')">B2</button>
+        <button class="btn-lvl btn-c1" onclick="incarcaLectie('c1')">C1 - Avansat</button>
+    </div>
 </div>
 
 <div class="card">
-    <div id="reader-area">Textul va apărea aici...</div>
+    <textarea id="input-text" placeholder="Lipește text propriu..."></textarea>
+    <button class="btn-main" onclick="incarcaText()">Încarcă Text</button>
+</div>
+
+<div class="card">
+    <div id="reader-area">Alege o lecție...</div>
+    <button id="audio-btn" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
+</div>
+
+<div class="card">
+    <h4>📓 Vocabularul meu</h4>
+    <ul id="vocab-list"></ul>
+    <button class="btn-main btn-clear" onclick="stergeVocabular()">Șterge Lista</button>
 </div>
 
 <script>
-    function incarcaText() {
-        const text = document.getElementById('input-text').value;
-        const reader = document.getElementById('reader-area');
-        // Împărțim textul și creăm elementele pentru fiecare cuvânt
-        reader.innerHTML = text.split(/\s+/).map(word => `<span class="word" onclick="tradu(this)">${word}</span>`).join(' ');
+    const biblioteca = {
+        'a1': "Mein Name ist Hans. Ich wohne in Berlin. Ich lerne Deutsch.",
+        'a2': "Gestern bin ich in die Stadt gegangen. Das Museum war sehr interessant.",
+        'b1': "Umweltfreundliche Energiequellen gewinnen immer mehr an Bedeutung.",
+        'b2': "In der heutigen Gesellschaft ist es unerlässlich, Medienkompetenz zu besitzen.",
+        'c1': "Die Komplexität der philosophischen Abhandlungen erfordert eine tiefgreifende Auseinandersetzung."
+    };
+
+    let textCurent = "";
+    let vocabular = {};
+
+    function incarcaLectie(id) { render(biblioteca[id]); }
+    function incarcaText() { const t = document.getElementById('input-text').value; if(t) render(t); }
+
+    function render(text) {
+        textCurent = text;
+        document.getElementById('audio-btn').style.display = "block";
+        document.getElementById('reader-area').innerHTML = text.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
     }
 
-    function tradu(element) {
-        // Ștergem culoarea verde de la orice alt cuvânt selectat anterior
+    function vorbeste() {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = textCurent;
+        msg.lang = 'de-DE';
+        window.speechSynthesis.speak(msg);
+    }
+
+    function tradu(el) {
         document.querySelectorAll('.word').forEach(w => w.classList.remove('active-word'));
+        el.classList.add('active-word');
+        const c = el.innerText.replace(/[.,!?;:()]/g, '');
+        const bar = document.getElementById('top-bar');
         
-        // Colorăm cuvântul curent în verde
-        element.classList.add('active-word');
-
-        const cuvant = element.innerText.replace(/[.,!?;]/g, '');
-        const topBar = document.getElementById('top-bar');
-        
-        topBar.innerText = "Traducere: " + cuvant + "...";
-
-        // Interogăm serviciul de traducere
-        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${cuvant}`)
-            .then(res => res.json())
-            .then(data => {
-                const rezultat = data[0][0][0];
-                topBar.innerHTML = `<strong>${cuvant}</strong> = ${rezultat}`;
-            })
-            .catch(() => {
-                topBar.innerText = "Eroare la conexiune";
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${c}`)
+            .then(r => r.json()).then(d => {
+                const trad = d[0][0][0];
+                bar.innerHTML = `<strong>${c}</strong> = ${trad}`;
+                salveazaInVocabular(c, trad);
             });
+    }
+
+    function salveazaInVocabular(germana, romana) {
+        vocabular[germana] = romana;
+        const lista = document.getElementById('vocab-list');
+        lista.innerHTML = "";
+        for (let cuvant in vocabular) {
+            lista.innerHTML += `<li><strong>${cuvant}</strong> <span>${vocabular[cuvant]}</span></li>`;
+        }
+    }
+
+    function stergeVocabular() {
+        vocabular = {};
+        document.getElementById('vocab-list').innerHTML = "";
     }
 </script>
 
