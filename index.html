@@ -3,56 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Simplu</title>
+    <title>Germana Expert Pro</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; padding-top: 70px; }
-        
-        /* Bara de sus fixa */
         #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: #28a745; color: white; 
                    display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 5px; text-align: center; }
-
-        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* Butoane Nivele */
+        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-        .btn-lvl { border: none; padding: 10px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-lvl { border: none; padding: 10px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; font-size: 12px; }
         .a1 { background: #28a745; } .a2 { background: #17a2b8; } .b1 { background: #fd7e14; }
-        .b2 { background: #dc3545; } .c1 { background: #6f42c1; } .manual { background: #007bff; }
-
-        textarea { width: 100%; height: 80px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px; padding: 8px; }
+        .b2 { background: #dc3545; } .c1 { background: #6f42c1; } .test { background: #ffc107; color: black; }
         
-        /* Zona de citire */
-        #reader-area { line-height: 2; font-size: 18px; color: #333; min-height: 50px; }
+        .menu-item { display: block; width: 100%; padding: 12px; margin-top: 5px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; text-align: left; font-weight: bold; cursor: pointer; }
+        .menu-item:active { background: #e2e6ea; }
+        
+        #reader-area { line-height: 2; font-size: 19px; color: #333; min-height: 50px; }
         .word { cursor: pointer; padding: 2px 4px; border-radius: 3px; display: inline-block; }
         .word:active { background: #ffeb3b; }
-
-        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 12px; border-radius: 5px; margin-top: 10px; font-weight: bold; }
-        
-        /* Vocabular */
+        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 12px; border-radius: 5px; margin-top: 10px; font-weight: bold; display: none; }
         #vocab-list { padding: 0; list-style: none; margin-top: 10px; }
         #vocab-list li { background: #eee; padding: 8px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 14px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div id="top-bar">Apasă un cuvânt</div>
+<div id="top-bar">Alege o sursă sau un nivel</div>
 
 <div class="card">
     <div class="grid">
-        <button class="btn-lvl a1" onclick="incarca('a1')">A1</button>
-        <button class="btn-lvl a2" onclick="incarca('a2')">A2</button>
-        <button class="btn-lvl b1" onclick="incarca('b1')">B1</button>
-        <button class="btn-lvl b2" onclick="incarca('b2')">B2</button>
-        <button class="btn-lvl c1" onclick="incarca('c1')">C1</button>
-        <button class="btn-lvl manual" onclick="incarcaPropriu()">Propriu</button>
+        <button class="btn-lvl a1" onclick="deschideMeniu('a1')">A1-A2</button>
+        <button class="btn-lvl b1" onclick="deschideMeniu('b1')">B1-B2</button>
+        <button class="btn-lvl c1" onclick="deschideMeniu('c1')">Știri C1</button>
+        <button class="btn-lvl test" onclick="pornesteTest()">QUIZ</button>
+        <button class="btn-lvl manual" style="background:#007bff; color:white;" onclick="document.getElementById('manual-input').classList.toggle('hidden')">Propriu</button>
     </div>
-    <textarea id="input-text" placeholder="Lipește textul tău aici..."></textarea>
+    
+    <div id="manual-input" class="hidden">
+        <textarea id="input-text" style="width:100%; height:60px; margin-top:10px;" placeholder="Lipește textul tău..."></textarea>
+        <button onclick="incarcaPropriu()" style="width:100%; margin-top:5px; padding:10px; background:#007bff; color:white; border:none; border-radius:5px;">Încarcă</button>
+    </div>
+</div>
+
+<div id="menu-area" class="card hidden">
+    <h4 id="menu-title" style="margin-top:0;">Opțiuni:</h4>
+    <div id="menu-options"></div>
 </div>
 
 <div class="card">
-    <div id="reader-area">Alege un nivel de sus...</div>
-    <button class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
+    <div id="reader-area">Selectează ceva pentru a începe lectura...</div>
+    <button id="btn-audio" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
 </div>
 
 <div class="card">
@@ -62,32 +63,52 @@
 
 <script>
     const biblio = {
-        'a1': "Hallo! Ich heiße Alex. Ich wohne in Deutschland und lerne jeden Tag Deutsch.",
-        'a2': "Gestern war ich im Supermarkt. Ich habe Brot, Milch und Obst gekauft. Es war sehr teuer.",
-        'b1': "Die Umwelt ist ein wichtiges Thema. Wir müssen weniger Plastik benutzen, um die Natur zu schützen.",
-        'b2': "Es ist wissenschaftlich bewiesen, dass regelmäßiges Lesen die kognitiven Fähigkeiten verbessert.",
-        'c1': "Die soziokulturelle Entwicklung der Moderne ist eng mit der industriellen Revolution verknüpft."
+        'a1': [
+            { t: "Dialog: La Cafenea", c: "Hallo! Ich möchte einen Kaffee und einen Kuchen, bitte. Das macht fünf Euro." },
+            { t: "Despre Familie", c: "Meine Familie ist groß. Ich habe zwei Brüder und eine Schwester. Wir wohnen in Berlin." }
+        ],
+        'b1': [
+            { t: "Protecția Mediului", c: "Die Umwelt ist ein kritisches Thema unserer Zeit. Wir müssen Plastikmüll reduzieren." },
+            { t: "Tehnologie", c: "Künstliche Intelligenz verändert die Art und Weise, wie wir arbeiten und kommunizieren." }
+        ],
+        'c1': [
+            { t: "DW: Economia Germană", c: "Die deutsche Bundesbank prognostiziert eine graduelle Erholung der Konjunktur trotz globaler Instabilitäten." },
+            { t: "Cultură: Filosofie", c: "Die ontologische Differenz zwischen Sein und Seiendem ist ein zentraler Aspekt der modernen Metaphysik." }
+        ]
     };
 
     let textDeCitit = "";
+    let vocabular = [];
 
-    function incarca(lvl) {
-        textDeCitit = biblio[lvl];
-        afiseaza(textDeCitit);
-    }
+    function deschideMeniu(lvl) {
+        const menuArea = document.getElementById('menu-area');
+        const options = document.getElementById('menu-options');
+        menuArea.classList.remove('hidden');
+        options.innerHTML = "";
+        document.getElementById('menu-title').innerText = "Texte " + lvl.toUpperCase();
 
-    function incarcaPropriu() {
-        textDeCitit = document.getElementById('input-text').value;
-        if(textDeCitit) afiseaza(textDeCitit);
+        biblio[lvl].forEach(item => {
+            let b = document.createElement('button');
+            b.className = "menu-item";
+            b.innerText = "🇩🇪 " + item.t;
+            b.onclick = () => { afiseaza(item.c); menuArea.classList.add('hidden'); };
+            options.appendChild(b);
+        });
     }
 
     function afiseaza(txt) {
+        textDeCitit = txt;
+        document.getElementById('btn-audio').style.display = "block";
         const area = document.getElementById('reader-area');
         area.innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
     }
 
+    function incarcaPropriu() {
+        let t = document.getElementById('input-text').value;
+        if(t) { afiseaza(t); document.getElementById('manual-input').classList.add('hidden'); }
+    }
+
     function vorbeste() {
-        if(!textDeCitit) return;
         let ut = new SpeechSynthesisUtterance(textDeCitit);
         ut.lang = 'de-DE';
         window.speechSynthesis.speak(ut);
@@ -95,19 +116,25 @@
 
     function tradu(el) {
         let cuvant = el.innerText.replace(/[.,!?;:]/g, '');
-        document.getElementById('top-bar').innerText = "Traducere: " + cuvant + "...";
-        
+        document.getElementById('top-bar').innerText = "Traducere...";
         fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${cuvant}`)
-            .then(r => r.json())
-            .then(data => {
+            .then(r => r.json()).then(data => {
                 let trad = data[0][0][0];
                 document.getElementById('top-bar').innerHTML = `<b>${cuvant}</b> = ${trad}`;
-                
-                // Adaugă în vocabular
-                let li = document.createElement('li');
-                li.innerHTML = `<span>${cuvant}</span> <b>${trad}</b>`;
-                document.getElementById('vocab-list').prepend(li);
+                if(!vocabular.includes(cuvant)) {
+                    vocabular.push(cuvant);
+                    let li = document.createElement('li');
+                    li.innerHTML = `<span>${cuvant}</span> <b>${trad}</b>`;
+                    document.getElementById('vocab-list').prepend(li);
+                }
             });
+    }
+
+    function pornesteTest() {
+        if(vocabular.length < 1) { alert("Salvează câteva cuvinte întâi!"); return; }
+        let cuv = vocabular[Math.floor(Math.random() * vocabular.length)];
+        let raspuns = prompt(`Cum se traduce în Română: "${cuv}"?`);
+        if(raspuns) alert("Excelent! Continuă să exersezi.");
     }
 </script>
 
