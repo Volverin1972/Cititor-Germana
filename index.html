@@ -3,125 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cititor Germana - Versiunea Completa</title>
+    <title>Germana - Cititor Complet</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 70px; }
-        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 65px; background: #28a745; color: white; 
-                   display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 5px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 75px; }
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 70px; background: #28a745; color: white; 
+                   display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 18px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .section-title { font-size: 14px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 10px; display: block; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .section-title { font-size: 13px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 10px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         
-        /* Grid Butoane Nivele */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-        .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
-        .a1 { background: #4caf50; } .a2 { background: #009688; }
-        .b1 { background: #ff9800; } .b2 { background: #e91e63; }
-        .c1 { background: #673ab7; } .propriu-btn { background: #007bff; }
-        .quiz-btn { background: #fbc02d; color: #000; grid-column: span 3; margin-top: 5px; }
-
-        #reader-area { line-height: 1.8; font-size: 19px; color: #1a1a1a; min-height: 150px; padding: 10px 0; white-space: pre-wrap; }
-        .word { cursor: pointer; padding: 2px; border-radius: 4px; display: inline-block; }
-        .word:active { background: #ffeb3b; }
+        .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .a1 { background: #4caf50; } .a2 { background: #009688; } .b1 { background: #ff9800; }
+        .b2 { background: #e91e63; } .c1 { background: #673ab7; } .propriu-btn { background: #007bff; }
         
-        /* Sectiune Salvare */
-        .saved-item { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; }
-        .btn-del { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; }
+        #reader-area { line-height: 2.2; font-size: 20px; color: #1a1a1a; min-height: 150px; padding: 15px 0; white-space: pre-wrap; }
         
-        textarea { width: 100%; height: 100px; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 16px; margin-top: 10px; }
-        .btn-audio { width: 100%; background: #343a40; color: white; padding: 15px; border-radius: 8px; margin-top: 10px; font-weight: bold; border: none; }
+        /* EVIDENȚIERE CUVÂNT SELECTAT */
+        .word { cursor: pointer; padding: 2px 4px; border-radius: 4px; display: inline-block; transition: background 0.2s; }
+        .active-word { background: #ccffcc !important; border-bottom: 2px solid #28a745; }
+        
+        .btn-audio { width: 100%; background: #343a40; color: white; padding: 16px; border-radius: 8px; margin-top: 10px; font-weight: bold; border: none; font-size: 16px; }
+        .saved-item { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; }
+        textarea { width: 100%; height: 120px; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 16px; margin-top: 10px; }
         .hidden { display: none; }
+        #vocab-list li { background: #fff; padding: 10px; margin-bottom: 5px; border-radius: 6px; border-left: 5px solid #28a745; display: flex; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-<div id="top-bar">Apasă pe un buton sau cuvânt</div>
+<div id="top-bar">Apasă pe un cuvânt</div>
 
 <div class="card">
-    <span class="section-title">Nivele și Instrumente</span>
+    <span class="section-title">Nivele</span>
     <div class="grid">
         <button class="btn a1" onclick="incarcaPreset('a1')">A1</button>
         <button class="btn a2" onclick="incarcaPreset('a2')">A2</button>
         <button class="btn b1" onclick="incarcaPreset('b1')">B1</button>
         <button class="btn b2" onclick="incarcaPreset('b2')">B2</button>
         <button class="btn c1" onclick="incarcaPreset('c1')">C1</button>
-        <button class="btn propriu-btn" onclick="togglePropriu()">Propriu</button>
-        <button class="btn quiz-btn" onclick="pornesteQuiz()">QUIZ VOCABULAR</button>
+        <button class="btn propriu-btn" onclick="togglePropriu()">+ TEXT</button>
     </div>
 
     <div id="manual-section" class="hidden">
-        <input type="text" id="input-title" placeholder="Titlu text nou..." style="width:100%; padding:10px; margin-bottom:5px; border-radius:8px; border:1px solid #ddd;">
-        <textarea id="input-text" placeholder="Lipește textul lung aici..."></textarea>
-        <button class="btn propriu-btn" style="width:100%; margin-top:5px;" onclick="salveazaText()">Salvează în Bibliotecă</button>
+        <input type="text" id="input-title" placeholder="Titlu (ex: Hansel si Gretel)" style="width:100%; padding:10px; margin-bottom:5px; border-radius:8px; border:1px solid #ddd;">
+        <textarea id="input-text" placeholder="Lipește aici toată povestea..."></textarea>
+        <button class="btn propriu-btn" style="width:100%; margin-top:5px;" onclick="salveazaText()">Salvează textul complet</button>
     </div>
 </div>
 
 <div class="card" id="saved-container">
-    <span class="section-title">Textele Mele Salvate</span>
+    <span class="section-title">Biblioteca Mea</span>
     <div id="saved-list"></div>
 </div>
 
 <div class="card">
-    <span class="section-title">Cititor Lectură</span>
-    <div id="reader-area">Selectează un nivel pentru a începe...</div>
-    <button id="btn-audio" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul</button>
+    <span class="section-title">Cititor</span>
+    <div id="reader-area">Alege un text...</div>
+    <button id="btn-audio" class="btn-audio" onclick="vorbeste()">🔊 Redă Audio</button>
 </div>
 
 <div class="card">
-    <span class="section-title">Vocabular Salvat</span>
-    <ul id="vocab-list" style="padding:0; list-style:none;"></ul>
+    <span class="section-title">Vocabular Nou</span>
+    <ul id="vocab-list"></ul>
 </div>
 
 <script>
     const lecturi = {
-        'a1': "Hallo! Ich bin Thomas. Ich wohne in Berlin. Das Wetter ist heute sehr schön. Ich lerne Deutsch, weil ich hier arbeite.",
-        'a2': "Gestern bin ich in den Supermarkt gegangen. Ich habe Obst und Gemüse gekauft. Danach habe ich meine Freunde im Park getroffen.",
-        'b1': "Ich bereite mich auf meine Prüfung vor. Es ist wichtig, jeden Tag neue Wörter zu lernen und Grammatik zu wiederholen. Ich sehe oft deutsche Filme fern.",
-        'b2': "Die Digitalisierung verändert unseren Alltag grundlegend. Viele Menschen arbeiten mittlerweile im Home-Office, was sowohl Vorteile als auch Nachteile mit sich bringt.",
-        'c1': "Die Implementierung neuer Technologien erfordert eine umfassende Analyse der bestehenden Infrastruktur, um langfristige Effizienzsteigerungen zu gewährleisten."
+        'a1': "Hallo! Ich bin Thomas. Ich wohne in Berlin. Das Wetter ist heute sehr schön.",
+        'b1': "Ich bereite mich auf meine Prüfung vor. Es ist wichtig, jeden Tag neue Wörter zu lernen.",
+        'c1': "Die Implementierung neuer Technologien erfordert eine umfassende Analyse der bestehenden Infrastruktur."
     };
 
     let vocab = {};
     let textCurent = "";
 
-    window.onload = function() { incarcaLista(); };
+    window.onload = incarcaLista;
 
     function togglePropriu() { document.getElementById('manual-section').classList.toggle('hidden'); }
-
     function incarcaPreset(key) { afiseaza(lecturi[key]); }
 
     function afiseaza(txt) {
         textCurent = txt;
         const area = document.getElementById('reader-area');
+        // Împărțim textul în cuvinte și le facem clicabile
         area.innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
     }
 
     function tradu(el) {
-        let cuvant = el.innerText.replace(/[.,!?;:()]/g, '');
+        // Ștergem clasa de "activ" de la orice alt cuvânt selectat anterior
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('active-word'));
+        // Adăugăm clasa de verde la cuvântul curent
+        el.classList.add('active-word');
+
+        let cuvantCurat = el.innerText.replace(/[.,!?;:()]/g, '');
         document.getElementById('top-bar').innerText = "Traducere...";
-        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${cuvant}`)
+
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${cuvantCurat}`)
             .then(r => r.json()).then(data => {
                 let trad = data[0][0][0];
-                document.getElementById('top-bar').innerHTML = `<b>${cuvant}</b> = ${trad}`;
-                if(!vocab[cuvant]) {
-                    vocab[cuvant] = trad;
+                document.getElementById('top-bar').innerHTML = `<b>${cuvantCurat}</b> = ${trad}`;
+                
+                if(!vocab[cuvantCurat]) {
+                    vocab[cuvantCurat] = trad;
                     let li = document.createElement('li');
-                    li.style = "background:#f8f9fa; padding:8px; margin-bottom:5px; border-radius:5px; border-left:4px solid #28a745; display:flex; justify-content:space-between;";
-                    li.innerHTML = `<span>${cuvant}</span> <b>${trad}</b>`;
+                    li.innerHTML = `<span>${cuvantCurat}</span> <b>${trad}</b>`;
                     document.getElementById('vocab-list').prepend(li);
                 }
             });
     }
 
     function salveazaText() {
-        const titlu = document.getElementById('input-title').value || "Text Nou";
+        const titlu = document.getElementById('input-title').value || "Poveste Nouă";
         const continut = document.getElementById('input-text').value;
         if(!continut) return;
+        
         let lista = JSON.parse(localStorage.getItem('biblioteca_mea') || '[]');
         lista.push({ titlu, continut });
         localStorage.setItem('biblioteca_mea', JSON.stringify(lista));
+        
         document.getElementById('input-text').value = "";
+        document.getElementById('input-title').value = "";
         incarcaLista();
         togglePropriu();
     }
@@ -133,8 +135,8 @@
         lista.forEach((item, i) => {
             let div = document.createElement('div');
             div.className = "saved-item";
-            div.innerHTML = `<span onclick="afiseazaSalvat(${i})" style="cursor:pointer; flex:1;">📄 ${item.titlu}</span> 
-                             <button class="btn-del" onclick="sterge(${i})">X</button>`;
+            div.innerHTML = `<span onclick="afiseazaSalvat(${i})" style="cursor:pointer; flex:1; font-weight:bold;">📄 ${item.titlu}</span> 
+                             <button style="background:red; color:white; border:none; padding:5px 10px; border-radius:4px;" onclick="sterge(${i})">X</button>`;
             container.appendChild(div);
         });
     }
@@ -155,15 +157,6 @@
         let ut = new SpeechSynthesisUtterance(textCurent);
         ut.lang = 'de-DE';
         window.speechSynthesis.speak(ut);
-    }
-
-    function pornesteQuiz() {
-        let keys = Object.keys(vocab);
-        if(keys.length < 2) { alert("Mai adună cuvinte în vocabular!"); return; }
-        let c = keys[Math.floor(Math.random() * keys.length)];
-        let r = prompt(`Cum se traduce: ${c}?`);
-        if(r && r.toLowerCase() === vocab[c].toLowerCase()) alert("Excelent! 🎉");
-        else alert(`Greșit. Era: ${vocab[c]}`);
     }
 </script>
 </body>
