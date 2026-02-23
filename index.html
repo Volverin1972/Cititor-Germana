@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert - Setări și Backup</title>
+    <title>Germana Expert - Memorie Setări</title>
     <style>
         :root { --bg-reader: #ffffff; --font-size: 20px; }
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; transition: 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; }
         
         #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 75px; background: #28a745; color: white; 
                    display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
@@ -17,150 +17,139 @@
         
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
-        .a1 { background: #4caf50; } .a2 { background: #009688; } .b1 { background: #ff9800; }
-        .b2 { background: #e91e63; } .c1 { background: #673ab7; } .propriu { background: #007bff; }
+        .propriu { background: #007bff; } .btn-test { background: #673ab7; }
         
-        #reader-area { line-height: 1.8; font-size: var(--font-size); background: var(--bg-reader); color: #1a1a1a; min-height: 120px; padding: 15px; border-radius: 8px; white-space: pre-wrap; transition: 0.2s; }
+        #reader-area { line-height: 1.8; font-size: var(--font-size); background: var(--bg-reader); min-height: 120px; padding: 15px; border-radius: 8px; white-space: pre-wrap; }
         .word { cursor: pointer; padding: 2px 2px; border-radius: 4px; display: inline-block; }
         .active-word { background: #ccffcc !important; border-bottom: 2px solid #28a745; }
         
-        .btn-audio { width: 100%; padding: 16px; border-radius: 8px; margin-top: 10px; font-weight: bold; border: none; font-size: 16px; }
-        .play-mode { background: #343a40; color: white; }
-        .stop-mode { background: #dc3545; color: white; }
-        
-        /* SETĂRI */
-        .settings-panel { display: none; position: fixed; top: 80px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; }
-        .setting-row { margin-bottom: 15px; }
-        label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
-        select, input[type="range"] { width: 100%; padding: 8px; border-radius: 5px; }
-
+        .settings-panel { display: none; position: fixed; top: 80px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 80vh; overflow-y: auto; }
         .item-row { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #ddd; }
         .hidden { display: none; }
+        input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div id="top-bar">
-    <span id="status-text">Lecții Germană</span>
+    <span id="status-text">Germana Pro</span>
     <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⚙️</button>
 </div>
 
 <div id="settings-panel" class="settings-panel">
-    <h3 style="margin-top:0">⚙️ Setări Program</h3>
+    <h3 style="margin-top:0">⚙️ Setări Personalizate</h3>
     
-    <div class="setting-row">
-        <label>Voce Germană:</label>
-        <select id="voice-select"></select>
+    <div style="margin-bottom:15px;">
+        <label><b>Viteză Voce:</b> <span id="speed-val">1</span>x</label>
+        <input type="range" id="speed-slider" min="0.4" max="1.2" step="0.1" value="1" onchange="saveConfig()">
     </div>
 
-    <div class="setting-row">
-        <label>Viteză Redare: <span id="speed-val">1</span>x</label>
-        <input type="range" id="speed-slider" min="0.5" max="1.5" step="0.1" value="1" oninput="updateSpeedVal()">
+    <div style="margin-bottom:15px;">
+        <label><b>Mărime Text:</b> <span id="font-val">20</span>px</label>
+        <input type="range" id="font-slider" min="16" max="34" step="2" value="20" onchange="saveConfig()">
     </div>
 
-    <div class="setting-row">
-        <label>Mărime Font Cititor: <span id="font-val">20</span>px</label>
-        <input type="range" id="font-slider" min="14" max="32" step="2" value="20" oninput="updateFontSize()">
-    </div>
-
-    <div class="setting-row">
-        <label>Culoare Fundal Cititor:</label>
-        <div style="display:flex; gap:10px;">
-            <button onclick="changeTheme('#ffffff')" style="flex:1; height:30px; background:white; border:1px solid #ccc;"></button>
-            <button onclick="changeTheme('#f4ecd8')" style="flex:1; height:30px; background:#f4ecd8; border:1px solid #ccc;"></button>
-            <button onclick="changeTheme('#e0e0e0')" style="flex:1; height:30px; background:#e0e0e0; border:1px solid #ccc;"></button>
-        </div>
+    <div style="margin-bottom:15px;">
+        <label><b>Culoare Fundal:</b></label>
+        <select id="theme-select" onchange="saveConfig()">
+            <option value="#ffffff">Alb Clasic</option>
+            <option value="#f4ecd8">Sepia (Odihnitor)</option>
+            <option value="#e0e0e0">Gri Soft</option>
+        </select>
     </div>
 
     <hr>
-    <label>Siguranță Date (Backup):</label>
-    <div style="display:flex; gap:5px;">
-        <button class="btn propriu" style="flex:1; font-size:10px;" onclick="exportData()">📥 Exportă Datele</button>
-        <button class="btn propriu" style="flex:1; font-size:10px; background:#ff9800;" onclick="document.getElementById('import-file').click()">📤 Importă Datele</button>
-        <input type="file" id="import-file" class="hidden" onchange="importData(event)">
+    <div style="background: #eef9ee; padding: 10px; border-radius: 8px;">
+        <label><b>📥 Import Rapid:</b></label>
+        <textarea id="web-import-area" style="height:60px" placeholder="Lipește textul aici..."></textarea>
+        <input type="text" id="web-import-title" placeholder="Titlu material">
+        <div style="display:flex; gap:5px; margin-top:5px;">
+            <button class="btn propriu" style="flex:1" onclick="importExtern('L')">Lectură</button>
+            <button class="btn btn-test" style="flex:1" onclick="importExtern('T')">Test</button>
+        </div>
     </div>
 
-    <button class="btn stop-mode" style="width:100%; margin-top:20px;" onclick="toggleSettings()">Închide Setări</button>
+    <button class="btn" style="width:100%; margin-top:15px; background:#343a40" onclick="toggleSettings()">Salvează și Închide</button>
 </div>
 
 <div class="card">
-    <span class="section-title">Nivele & Adăugare</span>
     <div class="grid">
-        <button class="btn a1" onclick="incarcaPreset('a1')">A1</button>
-        <button class="btn a2" onclick="incarcaPreset('a2')">A2</button>
-        <button class="btn b1" onclick="incarcaPreset('b1')">B1</button>
-        <button class="btn b2" onclick="incarcaPreset('b2')">B2</button>
-        <button class="btn c1" onclick="incarcaPreset('c1')">C1</button>
-        <button class="btn propriu" onclick="toggleSectiune('zona-adaugare')">+ NOU</button>
+        <button class="btn propriu" style="background:#4caf50" onclick="incarcaPreset('a1')">A1</button>
+        <button class="btn propriu" style="background:#ff9800" onclick="incarcaPreset('b1')">B1</button>
+        <button class="btn propriu" style="background:#673ab7" onclick="incarcaPreset('c1')">C1</button>
+        <button class="btn propriu" style="grid-column: span 3; margin-top:5px;" onclick="toggleSectiune('zona-adaugare')">+ Adaugă Manual</button>
     </div>
-    
     <div id="zona-adaugare" class="hidden">
         <input type="text" id="inp-titlu" placeholder="Titlu...">
         <textarea id="inp-text" style="height:80px" placeholder="Text sau Cuvant,Traducere"></textarea>
         <div style="display:flex; gap:5px; margin-top:5px;">
-            <button class="btn propriu" style="flex:1" onclick="salveaza('L')">Salvez Lectură</button>
-            <button class="btn propriu" style="flex:1; background:#673ab7" onclick="salveaza('T')">Salvez Test</button>
+            <button class="btn propriu" style="flex:1" onclick="salveaza('L')">Lectură</button>
+            <button class="btn btn-test" style="flex:1" onclick="salveaza('T')">Test</button>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <span class="section-title">📂 Salvările Mele</span>
+    <span class="section-title">📂 Materiale Salvate</span>
     <div id="lista-materiale"></div>
 </div>
 
 <div class="card">
-    <span class="section-title">📖 Cititor / Test</span>
-    <div id="reader-area">Selectează un text...</div>
-    <button id="main-audio-btn" class="btn-audio play-mode hidden" onclick="controlAudio()">🔊 Ascultă Tot</button>
+    <div id="reader-area">Alege un text...</div>
+    <button id="main-audio-btn" class="btn-audio propriu hidden" onclick="controlAudio()">🔊 Ascultă Tot</button>
 </div>
 
 <script>
     let synth = window.speechSynthesis;
     let textCurent = "";
-    let voices = [];
 
     window.onload = () => {
+        loadConfig();
         refreshLista();
-        loadVoices();
-        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
     };
 
+    // --- SALVARE SETĂRI ---
+    function saveConfig() {
+        const config = {
+            speed: document.getElementById('speed-slider').value,
+            font: document.getElementById('font-slider').value,
+            theme: document.getElementById('theme-select').value
+        };
+        localStorage.setItem('app_config', JSON.stringify(config));
+        applyConfig(config);
+    }
+
+    function loadConfig() {
+        const saved = localStorage.getItem('app_config');
+        if(saved) {
+            const config = JSON.parse(saved);
+            document.getElementById('speed-slider').value = config.speed;
+            document.getElementById('font-slider').value = config.font;
+            document.getElementById('theme-select').value = config.theme;
+            applyConfig(config);
+        }
+    }
+
+    function applyConfig(config) {
+        document.getElementById('speed-val').innerText = config.speed;
+        document.getElementById('font-val').innerText = config.font;
+        document.documentElement.style.setProperty('--font-size', config.font + 'px');
+        document.documentElement.style.setProperty('--bg-reader', config.theme);
+    }
+
+    // --- FUNCȚIILE EXISTENTE ---
     function toggleSettings() { let p = document.getElementById('settings-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
     function toggleSectiune(id) { document.getElementById(id).classList.toggle('hidden'); }
 
-    // --- SETĂRI ---
-    function loadVoices() {
-        voices = synth.getVoices().filter(v => v.lang.includes('de'));
-        const select = document.getElementById('voice-select');
-        select.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
-    }
-
-    function updateSpeedVal() { document.getElementById('speed-val').innerText = document.getElementById('speed-slider').value; }
-    function updateFontSize() { 
-        let val = document.getElementById('font-slider').value;
-        document.getElementById('font-val').innerText = val;
-        document.documentElement.style.setProperty('--font-size', val + 'px');
-    }
-    function changeTheme(color) { document.documentElement.style.setProperty('--bg-reader', color); }
-
-    // --- LOGICĂ ---
-    function afiseaza(t) {
-        textCurent = t;
-        document.getElementById('reader-area').innerHTML = t.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
-        document.getElementById('main-audio-btn').classList.remove('hidden');
-        stopAudio();
-    }
-
-    function tradu(el) {
-        document.querySelectorAll('.word').forEach(w => w.classList.remove('active-word'));
-        el.classList.add('active-word');
-        let c = el.innerText.replace(/[.,!?;:()]/g, '');
-        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${c}`)
-            .then(r => r.json()).then(data => {
-                let trad = data[0][0][0];
-                document.getElementById('status-text').innerHTML = `${c} = ${trad} <button onclick="redaSf('${c}')" style="background:white; border:none; border-radius:50%; width:25px; height:25px; cursor:pointer">🔊</button>`;
-            });
+    function importExtern(tip) {
+        const text = document.getElementById('web-import-area').value;
+        const titlu = document.getElementById('web-import-title').value || "Import";
+        if(!text) return;
+        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        db.push({ titlu, continut: text, tip });
+        localStorage.setItem('mea_data', JSON.stringify(db));
+        refreshLista();
+        alert("Salvat!");
     }
 
     function salveaza(tip) {
@@ -168,7 +157,7 @@
         const c = document.getElementById('inp-text').value;
         if(!c) return;
         let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        db.push({ titlu: t, continut: c, tip: tip });
+        db.push({ titlu: t, continut: c, tip });
         localStorage.setItem('mea_data', JSON.stringify(db));
         refreshLista(); toggleSectiune('zona-adaugare');
     }
@@ -178,8 +167,8 @@
         let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
         cont.innerHTML = db.map((item, i) => `
             <div class="item-row">
-                <span onclick="deschide(${i})" style="cursor:pointer"><b>${item.tip == 'L' ? '📄' : '🧠'} ${item.titlu}</b></span>
-                <span onclick="sterge(${i})" style="color:red; cursor:pointer">X</span>
+                <span onclick="deschide(${i})" style="cursor:pointer; flex:1;"><b>${item.tip == 'L' ? '📄' : '🧠'} ${item.titlu}</b></span>
+                <span onclick="sterge(${i})" style="color:red; cursor:pointer; font-weight:bold;">X</span>
             </div>
         `).join('');
     }
@@ -197,63 +186,51 @@
             let r = prompt("Tradu: " + q[0]);
             if(r && r.toLowerCase().trim() == q[1].toLowerCase().trim()) s++;
         });
-        alert("Scor Final: " + s + "/" + p.length);
+        alert("Scor: " + s + "/" + p.length);
     }
 
     function sterge(i) {
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        db.splice(i, 1);
-        localStorage.setItem('mea_data', JSON.stringify(db));
-        refreshLista();
+        if(confirm("Ștergi?")) {
+            let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+            db.splice(i, 1);
+            localStorage.setItem('mea_data', JSON.stringify(db));
+            refreshLista();
+        }
     }
 
-    // --- AUDIO ---
-    function redaSf(c) {
-        stopAudio();
-        let u = new SpeechSynthesisUtterance(c);
-        u.voice = voices[document.getElementById('voice-select').value];
-        u.rate = document.getElementById('speed-slider').value;
-        u.lang = 'de-DE';
-        synth.speak(u);
+    function afiseaza(t) {
+        textCurent = t;
+        document.getElementById('reader-area').innerHTML = t.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
+        document.getElementById('main-audio-btn').classList.remove('hidden');
     }
 
+    function tradu(el) {
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('active-word'));
+        el.classList.add('active-word');
+        let c = el.innerText.replace(/[.,!?;:()]/g, '');
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${c}`)
+            .then(r => r.json()).then(data => {
+                let trad = data[0][0][0];
+                document.getElementById('status-text').innerHTML = `<b>${c}</b> = ${trad} <button onclick="redaSf('${c}')" style="border:none; background:white; cursor:pointer;">🔊</button>`;
+            });
+    }
+
+    function redaSf(c) { synth.cancel(); let u = new SpeechSynthesisUtterance(c); u.lang = 'de-DE'; u.rate = document.getElementById('speed-slider').value; synth.speak(u); }
+    
     function controlAudio() {
-        if(synth.speaking) stopAudio();
+        if(synth.speaking) { synth.cancel(); document.getElementById('main-audio-btn').innerText = "🔊 Ascultă Tot"; }
         else {
-            let u = new SpeechSynthesisUtterance(textCurent);
-            u.voice = voices[document.getElementById('voice-select').value];
+            let u = new SpeechSynthesisUtterance(textCurent); u.lang = 'de-DE';
             u.rate = document.getElementById('speed-slider').value;
-            u.lang = 'de-DE';
-            u.onstart = () => { document.getElementById('main-audio-btn').innerHTML = "⏹ Oprește"; document.getElementById('main-audio-btn').className = "btn-audio stop-mode"; };
-            u.onend = stopAudio;
+            u.onstart = () => document.getElementById('main-audio-btn').innerText = "⏹ Oprește";
+            u.onend = () => document.getElementById('main-audio-btn').innerText = "🔊 Ascultă Tot";
             synth.speak(u);
         }
     }
-    function stopAudio() { synth.cancel(); let b = document.getElementById('main-audio-btn'); b.innerHTML = "🔊 Ascultă Tot"; b.className = "btn-audio play-mode"; }
-
-    // --- BACKUP ---
-    function exportData() {
-        const data = localStorage.getItem('mea_data');
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'backup_germana.json';
-        a.click();
-    }
-
-    function importData(event) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            localStorage.setItem('mea_data', e.target.result);
-            refreshLista();
-            alert("Date importate cu succes!");
-        };
-        reader.readAsText(event.target.files[0]);
-    }
 
     function incarcaPreset(n) {
-        const p = { 'a1': "Hallo! Ich heiße Max. Ich komme aus München.", 'b1': "Es ist wichtig, jeden Tag ein bisschen zu üben.", 'c1': "Die ökonomische Lage erfordert neue Strategien." };
-        afiseaza(p[n] || "Text Nivel " + n);
+        const p = { 'a1': "Hallo! Ich bin aici.", 'b1': "Deutsch ist super!", 'c1': "Wunderbar!" };
+        afiseaza(p[n]);
     }
 </script>
 </body>
