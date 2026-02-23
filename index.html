@@ -3,149 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Story Reader</title>
+    <title>Germana Daily News & Stories</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 70px; }
         #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 65px; background: #28a745; color: white; 
                    display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: bold; padding: 5px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .btn-lvl { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
-        .btn-lvl:active { transform: scale(0.95); }
-        .a1 { background: #4caf50; } .b1 { background: #ff9800; } .c1 { background: #9c27b0; }
-        .btn-link { background: #546e7a; grid-column: span 3; margin-top: 5px; }
+        .section-title { font-size: 14px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 10px; display: block; }
         
-        #reader-area { line-height: 1.8; font-size: 20px; color: #2c3e50; min-height: 100px; }
-        .word { cursor: pointer; padding: 2px 2px; border-radius: 4px; display: inline-block; border-bottom: 1px solid #eee; }
+        /* Meniu știri */
+        .news-feed { display: flex; flex-direction: column; gap: 8px; }
+        .news-item { background: #eef2f7; border: none; padding: 15px; border-radius: 10px; text-align: left; cursor: pointer; border-left: 5px solid #007bff; }
+        .news-item:active { background: #d0d7e1; }
+        .news-title { font-weight: bold; display: block; font-size: 15px; color: #1a1a1a; }
+        .news-desc { font-size: 12px; color: #666; margin-top: 4px; display: block; }
+
+        #reader-area { line-height: 1.8; font-size: 20px; color: #2c3e50; min-height: 100px; padding: 10px 0; }
+        .word { cursor: pointer; padding: 2px; border-radius: 4px; display: inline-block; border-bottom: 1px solid #eee; }
         .word:active { background: #ffeb3b; color: #000; }
         
-        .verbe-highlight { color: #d32f2f; font-weight: bold; border-bottom: 2px solid #d32f2f; }
-        
-        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 14px; border-radius: 8px; margin-top: 15px; font-weight: bold; font-size: 16px; }
+        .btn-audio { width: 100%; background: #343a40; color: white; border: none; padding: 14px; border-radius: 8px; margin-top: 15px; font-weight: bold; display: none; }
+        .loader { text-align: center; padding: 20px; color: #007bff; font-weight: bold; }
         .hidden { display: none; }
-        textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 16px; }
-        .menu-item { display: block; width: 100%; padding: 15px; margin-top: 8px; background: #fff; border: 2px solid #e9ecef; border-radius: 10px; text-align: left; font-weight: bold; cursor: pointer; color: #495057; }
     </style>
 </head>
 <body>
 
-<div id="top-bar">Apasă pe cuvinte pentru a învăța</div>
+<div id="top-bar">Apasă pe cuvinte pentru traducere</div>
 
-<div class="card">
-    <div class="grid">
-        <button class="btn-lvl a1" onclick="deschideMeniu('a1')">Nivel A</button>
-        <button class="btn-lvl b1" onclick="deschideMeniu('b1')">Nivel B</button>
-        <button class="btn-lvl c1" onclick="deschideMeniu('c1')">Nivel C</button>
-        <button class="btn-lvl btn-link" onclick="window.open('https://www.dw.com/de/deutsch-lernen/s-2055', '_blank')">🌐 Deschide Deutsche Welle (Copiază texte de acolo)</button>
-    </div>
-    
-    <button class="menu-item" style="border-color: #007bff; color: #007bff; text-align: center;" onclick="document.getElementById('manual-input').classList.toggle('hidden')">➕ Lipeste o poveste lungă</button>
-    
-    <div id="manual-input" class="hidden">
-        <textarea id="input-text" placeholder="Lipește aici o știre sau o poveste..."></textarea>
-        <button onclick="incarcaPropriu()" style="width:100%; margin: 10px 0; padding:12px; background:#007bff; color:white; border:none; border-radius:8px; font-weight:bold;">Începe Analiza Textului</button>
-    </div>
-</div>
-
-<div id="menu-area" class="card hidden">
-    <h3 id="menu-title" style="margin-top:0; color:#2c3e50;">Alege o poveste:</h3>
-    <div id="menu-options"></div>
+<div class="card" id="feed-container">
+    <span class="section-title">📰 Știri Live (Germania)</span>
+    <div id="news-status" class="loader">Se încarcă știrile proaspete...</div>
+    <div class="news-feed" id="news-feed"></div>
 </div>
 
 <div class="card">
-    <div id="reader-area">Alege o poveste sau lipește un text lung pentru a începe studiul.</div>
-    <button id="btn-audio" class="btn-audio hidden" onclick="vorbeste()">🔊 Citește cu voce tare</button>
+    <span class="section-title">📖 Lectură activă</span>
+    <div id="reader-area">Alege o știre de mai sus pentru a începe lectura...</div>
+    <button id="btn-audio" class="btn-audio" onclick="vorbeste()">🔊 Ascultă Textul Complet</button>
 </div>
 
 <div class="card">
-    <strong>📓 Cuvinte noi învățate azi:</strong>
-    <ul id="vocab-list" style="padding:0; list-style:none; margin-top:10px;"></ul>
+    <span class="section-title">📓 Vocabular salvat</span>
+    <ul id="vocab-list" style="padding:0; list-style:none;"></ul>
 </div>
 
 <script>
-    const biblio = {
-        'a1': [
-            { t: "O zi la fermă (Verbe de bază)", c: "Ich bin auf dem Bauernhof. Ich sehe eine Kuh. Die Kuh frisst Gras. Ich trinke frische Milch. Das Wetter ist heute sehr schön." },
-            { t: "Cumpărături (Prețuri)", c: "Ich gehe in den Supermarkt. Ich brauche Äpfel, Brot und Käse. Wie viel kostet das? Das kostet zehn Euro. Ich bezahle an der Kasse." }
-        ],
-        'b1': [
-            { t: "Verbe Separabile: O zi obișnuită", c: "Ich stehe um sechs Uhr auf. Dann kaufe ich im Supermarkt ein. Ich bereite das Essen vor. Am Abend sehe ich ein bisschen fern und schalte dann das Licht aus." },
-            { t: "O călătorie cu trenul", c: "Der Zug kommt pünktlich an. Ich steige in den Wagen ein. Während der Fahrt schaue ich aus dem Fenster. Ich steige am Hauptbahnhof aus." }
-        ],
-        'c1': [
-            { t: "Știre: Inteligența Artificială", c: "Die Integration von Algorithmen in den Arbeitsmarkt stellt eine enorme Herausforderung dar. Es gilt, ethische Rahmenbedingungen zu schaffen, um die Privatsphäre der Bürger zu gewährleisten." },
-            { t: "Analiză: Sustenabilitate", c: "Um den ökologischen Fußabdruck zu reduzieren, müssen Unternehmen ihre Produktionsprozesse grundlegend überdenken und auf erneuerbare Energieträger umsteigen." }
-        ]
-    };
+    // Sursă de știri via RSS2JSON (preia știri reale de la Tagesschau sau DW)
+    const NEWS_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.tagesschau.de%2Fxml%2Frss2%2F";
 
-    let textDeCitit = "";
-    let vocab = {};
-
-    function deschideMeniu(lvl) {
-        const menuArea = document.getElementById('menu-area');
-        const options = document.getElementById('menu-options');
-        menuArea.classList.remove('hidden');
-        options.innerHTML = "";
-        biblio[lvl].forEach(item => {
-            let b = document.createElement('button');
-            b.className = "menu-item";
-            b.innerText = "📖 " + item.t;
-            b.onclick = () => { afiseaza(item.c); menuArea.classList.add('hidden'); };
-            options.appendChild(b);
-        });
+    async function incarcaStiri() {
+        try {
+            const res = await fetch(NEWS_URL);
+            const data = await res.json();
+            const feed = document.getElementById('news-feed');
+            document.getElementById('news-status').classList.add('hidden');
+            
+            data.items.slice(0, 5).forEach(item => {
+                let div = document.createElement('div');
+                div.className = "news-item";
+                // Combinăm titlul cu descrierea pentru a avea un text mai lung de citit
+                const textComplet = item.title + ". " + item.description.replace(/<[^>]*>?/gm, '');
+                
+                div.innerHTML = `
+                    <span class="news-title">${item.title}</span>
+                    <span class="news-desc">Apasă pentru a studia textul...</span>
+                `;
+                div.onclick = () => afiseaza(textComplet);
+                feed.appendChild(div);
+            });
+        } catch (e) {
+            document.getElementById('news-status').innerText = "Eroare la încărcarea știrilor.";
+        }
     }
 
     function afiseaza(txt) {
-        textDeCitit = txt;
-        document.getElementById('btn-audio').classList.remove('hidden');
+        document.getElementById('btn-audio').style.display = "block";
+        window.currentText = txt;
         const area = document.getElementById('reader-area');
-        // Identificăm verbe separabile comune (simplificat) pentru highlight
-        const separabile = ["auf", "ein", "aus", "vor", "fern", "mit"];
-        
-        area.innerHTML = txt.split(/\s+/).map(w => {
-            let clean = w.toLowerCase().replace(/[.,!?;:]/g, '');
-            let css = separabile.includes(clean) ? "word verbe-highlight" : "word";
-            return `<span class="${css}" onclick="tradu(this)">${w}</span>`;
-        }).join(' ');
-    }
-
-    function incarcaPropriu() {
-        let t = document.getElementById('input-text').value;
-        if(t) { afiseaza(t); document.getElementById('manual-input').classList.add('hidden'); }
-    }
-
-    function vorbeste() {
-        let ut = new SpeechSynthesisUtterance(textDeCitit);
-        ut.lang = 'de-DE';
-        ut.rate = 0.9; // Puțin mai lent pentru învățare
-        window.speechSynthesis.speak(ut);
+        area.innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="tradu(this)">${w}</span>`).join(' ');
+        window.scrollTo({ top: document.getElementById('reader-area').offsetTop - 80, behavior: 'smooth' });
     }
 
     function tradu(el) {
         let cuvant = el.innerText.replace(/[.,!?;:]/g, '');
-        document.getElementById('top-bar').innerText = "Traducere: " + cuvant + "...";
+        document.getElementById('top-bar').innerText = "Traducere...";
         fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${cuvant}`)
             .then(r => r.json()).then(data => {
                 let trad = data[0][0][0];
                 document.getElementById('top-bar').innerHTML = `<b>${cuvant}</b> = ${trad}`;
-                if(!vocab[cuvant]) {
-                    vocab[cuvant] = trad;
-                    actualizeazaVocab();
-                }
+                salveazaVocab(cuvant, trad);
             });
     }
 
-    function actualizeazaVocab() {
+    function salveazaVocab(g, r) {
         const list = document.getElementById('vocab-list');
-        list.innerHTML = "";
-        for (let k in vocab) {
-            let li = document.createElement('li');
-            li.style = "background:#fff; padding:8px; border-radius:5px; margin-bottom:5px; border-left:4px solid #28a745; display:flex; justify-content:space-between;";
-            li.innerHTML = `<span>${k}</span> <span style="color:#666">${vocab[k]}</span>`;
-            list.prepend(li);
-        }
+        let li = document.createElement('li');
+        li.style = "background:#f8f9fa; padding:8px; margin-bottom:5px; border-radius:5px; border-left:3px solid #28a745; display:flex; justify-content:space-between; font-size:14px;";
+        li.innerHTML = `<span>${g}</span> <span style="color:#666">${r}</span>`;
+        list.prepend(li);
     }
+
+    function vorbeste() {
+        let ut = new SpeechSynthesisUtterance(window.currentText);
+        ut.lang = 'de-DE';
+        window.speechSynthesis.speak(ut);
+    }
+
+    // Pornim încărcarea știrilor la deschidere
+    incarcaStiri();
 </script>
 
 </body>
