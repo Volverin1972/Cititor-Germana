@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert - Memorie Setări</title>
+    <title>Germana Expert - Font Traducere</title>
     <style>
-        :root { --bg-reader: #ffffff; --font-size: 20px; }
+        :root { --bg-reader: #ffffff; --font-size: 20px; --top-font-size: 17px; }
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; }
         
-        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 75px; background: #28a745; color: white; 
-                   display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 80px; background: #28a745; color: white; 
+                   display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
+                   font-size: var(--top-font-size); text-align: center; }
         
+        #status-text { flex: 1; padding-right: 10px; line-height: 1.2; }
+
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .section-title { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 10px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         
@@ -23,7 +26,10 @@
         .word { cursor: pointer; padding: 2px 2px; border-radius: 4px; display: inline-block; }
         .active-word { background: #ccffcc !important; border-bottom: 2px solid #28a745; }
         
-        .settings-panel { display: none; position: fixed; top: 80px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 80vh; overflow-y: auto; }
+        .settings-panel { display: none; position: fixed; top: 85px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 80vh; overflow-y: auto; }
+        .setting-item { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #333; }
+        
         .item-row { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #ddd; }
         .hidden { display: none; }
         input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
@@ -33,24 +39,29 @@
 
 <div id="top-bar">
     <span id="status-text">Germana Pro</span>
-    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⚙️</button>
+    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer; padding-left:10px;">⚙️</button>
 </div>
 
 <div id="settings-panel" class="settings-panel">
-    <h3 style="margin-top:0">⚙️ Setări Personalizate</h3>
+    <h3 style="margin-top:0; color:#28a745;">⚙️ Configurare Vizuală</h3>
     
-    <div style="margin-bottom:15px;">
-        <label><b>Viteză Voce:</b> <span id="speed-val">1</span>x</label>
-        <input type="range" id="speed-slider" min="0.4" max="1.2" step="0.1" value="1" onchange="saveConfig()">
+    <div class="setting-item">
+        <label>Mărime Text Traducere (Sus): <span id="top-font-val">17</span>px</label>
+        <input type="range" id="top-font-slider" min="14" max="26" step="1" value="17" onchange="saveConfig()">
     </div>
 
-    <div style="margin-bottom:15px;">
-        <label><b>Mărime Text:</b> <span id="font-val">20</span>px</label>
+    <div class="setting-item">
+        <label>Mărime Text Poveste: <span id="font-val">20</span>px</label>
         <input type="range" id="font-slider" min="16" max="34" step="2" value="20" onchange="saveConfig()">
     </div>
 
-    <div style="margin-bottom:15px;">
-        <label><b>Culoare Fundal:</b></label>
+    <div class="setting-item">
+        <label>Viteză Voce: <span id="speed-val">1</span>x</label>
+        <input type="range" id="speed-slider" min="0.4" max="1.2" step="0.1" value="1" onchange="saveConfig()">
+    </div>
+
+    <div class="setting-item">
+        <label>Culoare Fundal Cititor:</label>
         <select id="theme-select" onchange="saveConfig()">
             <option value="#ffffff">Alb Clasic</option>
             <option value="#f4ecd8">Sepia (Odihnitor)</option>
@@ -59,17 +70,17 @@
     </div>
 
     <hr>
-    <div style="background: #eef9ee; padding: 10px; border-radius: 8px;">
+    <div style="background: #f0f7ff; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
         <label><b>📥 Import Rapid:</b></label>
         <textarea id="web-import-area" style="height:60px" placeholder="Lipește textul aici..."></textarea>
-        <input type="text" id="web-import-title" placeholder="Titlu material">
+        <input type="text" id="web-import-title" placeholder="Titlu">
         <div style="display:flex; gap:5px; margin-top:5px;">
             <button class="btn propriu" style="flex:1" onclick="importExtern('L')">Lectură</button>
             <button class="btn btn-test" style="flex:1" onclick="importExtern('T')">Test</button>
         </div>
     </div>
 
-    <button class="btn" style="width:100%; margin-top:15px; background:#343a40" onclick="toggleSettings()">Salvează și Închide</button>
+    <button class="btn" style="width:100%; background:#343a40" onclick="toggleSettings()">Închide și Salvează</button>
 </div>
 
 <div class="card">
@@ -96,7 +107,7 @@
 
 <div class="card">
     <div id="reader-area">Alege un text...</div>
-    <button id="main-audio-btn" class="btn-audio propriu hidden" onclick="controlAudio()">🔊 Ascultă Tot</button>
+    <button id="main-audio-btn" class="btn-audio propriu hidden" style="width:100%; padding:15px; margin-top:10px; font-weight:bold; border-radius:8px;" onclick="controlAudio()">🔊 Ascultă Tot</button>
 </div>
 
 <script>
@@ -108,23 +119,24 @@
         refreshLista();
     };
 
-    // --- SALVARE SETĂRI ---
     function saveConfig() {
         const config = {
             speed: document.getElementById('speed-slider').value,
             font: document.getElementById('font-slider').value,
+            topFont: document.getElementById('top-font-slider').value,
             theme: document.getElementById('theme-select').value
         };
-        localStorage.setItem('app_config', JSON.stringify(config));
+        localStorage.setItem('app_config_v2', JSON.stringify(config));
         applyConfig(config);
     }
 
     function loadConfig() {
-        const saved = localStorage.getItem('app_config');
+        const saved = localStorage.getItem('app_config_v2');
         if(saved) {
             const config = JSON.parse(saved);
             document.getElementById('speed-slider').value = config.speed;
             document.getElementById('font-slider').value = config.font;
+            document.getElementById('top-font-slider').value = config.topFont || 17;
             document.getElementById('theme-select').value = config.theme;
             applyConfig(config);
         }
@@ -133,11 +145,12 @@
     function applyConfig(config) {
         document.getElementById('speed-val').innerText = config.speed;
         document.getElementById('font-val').innerText = config.font;
+        document.getElementById('top-font-val').innerText = config.topFont || 17;
         document.documentElement.style.setProperty('--font-size', config.font + 'px');
+        document.documentElement.style.setProperty('--top-font-size', (config.topFont || 17) + 'px');
         document.documentElement.style.setProperty('--bg-reader', config.theme);
     }
 
-    // --- FUNCȚIILE EXISTENTE ---
     function toggleSettings() { let p = document.getElementById('settings-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
     function toggleSectiune(id) { document.getElementById(id).classList.toggle('hidden'); }
 
@@ -211,7 +224,7 @@
         fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${c}`)
             .then(r => r.json()).then(data => {
                 let trad = data[0][0][0];
-                document.getElementById('status-text').innerHTML = `<b>${c}</b> = ${trad} <button onclick="redaSf('${c}')" style="border:none; background:white; cursor:pointer;">🔊</button>`;
+                document.getElementById('status-text').innerHTML = `${c} = ${trad} <button onclick="redaSf('${c}')" style="border:none; background:rgba(255,255,255,0.3); color:white; border-radius:50%; width:30px; height:30px; cursor:pointer; margin-left:5px;">🔊</button>`;
             });
     }
 
@@ -229,7 +242,7 @@
     }
 
     function incarcaPreset(n) {
-        const p = { 'a1': "Hallo! Ich bin aici.", 'b1': "Deutsch ist super!", 'c1': "Wunderbar!" };
+        const p = { 'a1': "Hallo! Wie geht es dir?", 'b1': "Ich lerne Deutsch mit dieser App.", 'c1': "Die Sprache ist eine Brücke zur Welt." };
         afiseaza(p[n]);
     }
 </script>
