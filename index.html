@@ -3,58 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert - Versiune Blindată</title>
+    <title>Germana Expert - Versiunea Completă</title>
     <style>
         :root { --bg-reader: #ffffff; --font-size: 20px; --top-font-size: 17px; }
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; }
-        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 80px; background: #28a745; color: white; display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: var(--top-font-size); }
+        
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 80px; background: #28a745; color: white; 
+                   display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
+                   font-size: var(--top-font-size); }
+        
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
-        .propriu { background: #007bff; } .btn-test { background: #673ab7; }
+        
+        /* Butoane Meniu Principal */
+        .grid-meniu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .m-btn { border: none; padding: 20px 10px; border-radius: 12px; color: white; font-weight: bold; font-size: 18px; cursor: pointer; text-align: center; }
+        .b-a1 { background: #4CAF50; } .b-b1 { background: #FF9800; } .b-c1 { background: #673AB7; }
+        .b-quiz { background: #FFC107; color: black; } .b-propriu { background: #2196F3; }
+
+        .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; }
         .clickable-word { cursor: pointer; padding: 2px; border-radius: 4px; display: inline-block; }
         .option-container { display: flex; align-items: center; background: #f8f9fa; border: 2px solid #ddd; border-radius: 10px; margin: 8px 0; padding: 5px 15px; }
         .btn-check { background: #28a745; color: white; border: none; border-radius: 6px; padding: 8px 12px; font-weight: bold; cursor: pointer; margin-left: auto; }
+        
         .correct { background: #d4edda !important; border-color: #28a745 !important; }
         .wrong { background: #f8d7da !important; border-color: #dc3545 !important; }
+        
         #reader-area { line-height: 1.6; font-size: var(--font-size); background: var(--bg-reader); min-height: 150px; padding: 15px; border-radius: 8px; }
+        
         .settings-panel { display: none; position: fixed; top: 85px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 85vh; overflow-y: auto; }
-        select, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
+        input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; margin-bottom: 10px;}
     </style>
 </head>
 <body>
 
 <div id="top-bar">
-    <span id="status-text">Recuperare Date...</span>
-    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px;">⚙️</button>
+    <span id="status-text">Lecție Personalizată</span>
+    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⚙️</button>
 </div>
 
 <div id="settings-panel" class="settings-panel">
-    <h3 style="margin-top:0">⚙️ Setări și Siguranță</h3>
-    <div id="stat-area" style="margin-bottom:10px; font-size:14px;"></div>
+    <h3 style="margin-top:0">⚙️ Setări și Statistici</h3>
+    <div id="stat-area" style="margin-bottom:10px; font-size:14px; background:#eee; padding:10px; border-radius:8px;"></div>
     
-    <div style="background:#e3f2fd; padding:10px; border-radius:8px; margin-bottom:10px;">
-        <label><b>Backup Manual:</b></label>
-        <button class="btn propriu" style="width:100%; margin:5px 0;" onclick="exportData()">Copiază tot codul de salvare</button>
-        <button class="btn btn-test" style="width:100%;" onclick="importData()">Lipește cod salvare (Restore)</button>
+    <label>Mărime Text (Font): <span id="font-val">20</span>px</label>
+    <input type="range" id="font-slider" min="16" max="35" value="20" onchange="updateFontSize()">
+
+    <hr>
+    <label>Import / Extinde Test:</label>
+    <select id="select-target-test"></select>
+    <textarea id="append-area" style="height:80px" placeholder="Întrebare | Corect | Greșit"></textarea>
+    <div style="display:flex; gap:5px;">
+        <button class="btn" style="background:#673ab7; flex:1;" onclick="appendQuestions()">+ EXTINDE</button>
+        <button class="btn" style="background:#007bff; flex:1;" onclick="importNou()">NOU</button>
     </div>
 
-    <label>Extinde Test existent:</label>
-    <select id="select-target-test"></select>
-    <textarea id="append-area" style="height:80px" placeholder="Intrebare | Corect | Gresit"></textarea>
-    <button class="btn btn-test" style="width:100%; margin-top:5px;" onclick="appendQuestions()">➕ ADAUGĂ ÎNTREBĂRI</button>
-    
     <hr>
-    <button class="btn" style="width:100%; background:#dc3545; margin-bottom:10px;" onclick="clearMistakes()">Resetează Greșeli</button>
+    <button class="btn" style="width:100%; background:#dc3545; margin-bottom:5px;" onclick="clearMistakes()">Golește Greșeli</button>
     <button class="btn" style="width:100%; background:#343a40" onclick="toggleSettings()">ÎNCHIDE</button>
 </div>
 
-<div class="card" id="list-card">
+<div class="card" id="main-menu">
+    <div class="grid-meniu">
+        <button class="m-btn b-a1" onclick="alert('Modul A1 încărcat')">A1-A2</button>
+        <button class="m-btn b-b1" onclick="alert('Modul B1 încărcat')">B1-B2</button>
+        <button class="m-btn b-c1" onclick="alert('Modul Știri încărcat')">Știri C1</button>
+        <button class="m-btn b-quiz" onclick="scrollToTests()">QUIZ</button>
+        <button class="m-btn b-propriu" onclick="scrollToTests()">Propriu</button>
+    </div>
+</div>
+
+<div class="card" id="list-container">
     <div id="lista-materiale"></div>
 </div>
 
 <div class="card">
-    <div id="reader-area">Așteaptă încărcarea datelor...</div>
+    <div id="reader-area">Selectează un test pentru a începe sesiunea de 10...</div>
 </div>
 
 <script>
@@ -62,54 +86,42 @@
 
     window.onload = () => {
         forțareRecuperare();
+        loadSettings();
         refreshLista();
-        document.getElementById('status-text').innerText = "Gata de lucru";
-        document.getElementById('reader-area').innerText = "Alege un test din lista de sus.";
     };
 
     function forțareRecuperare() {
-        // Căutăm date în toate locațiile posibile folosite anterior
-        let d1 = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        let d2 = JSON.parse(localStorage.getItem('germana_data') || '[]');
-        let d3 = JSON.parse(localStorage.getItem('app_data_v1') || '[]');
-        
-        let combinat = [...d1, ...d2, ...d3];
-        // Eliminăm duplicatele după titlu
-        let unic = combinat.filter((v,i,a)=>a.findIndex(t=>(t.titlu === v.titlu))===i);
-        
-        if (unic.length > 0) {
-            localStorage.setItem('mea_data_final', JSON.stringify(unic));
-        }
-    }
-
-    function getData() {
-        return JSON.parse(localStorage.getItem('mea_data_final') || '[]');
+        let d1 = JSON.parse(localStorage.getItem('mea_data_final') || '[]');
+        let d2 = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        let unic = [...d1, ...d2].filter((v,i,a)=>a.findIndex(t=>(t.titlu === v.titlu))===i);
+        localStorage.setItem('mea_data_final', JSON.stringify(unic));
     }
 
     function refreshLista() {
-        let db = getData();
+        let db = JSON.parse(localStorage.getItem('mea_data_final') || '[]');
         let gMistakes = JSON.parse(localStorage.getItem('global_mistakes') || '[]');
-        document.getElementById('stat-area').innerHTML = `Teste salvate: <b>${db.length}</b> | Greșeli: <b>${gMistakes.length}</b>`;
+        
+        document.getElementById('stat-area').innerHTML = `Teste: <b>${db.length}</b> | Greșeli salvate: <b>${gMistakes.length}</b>`;
         
         document.getElementById('lista-materiale').innerHTML = db.map((item, i) => `
-            <div style="display:flex; justify-content:space-between; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:5px; border:1px solid #ddd;">
-                <span onclick="preparaSesiune(${i})" style="cursor:pointer; flex:1;"><b>🧠 ${item.titlu}</b> (${item.continut.split('\n').filter(l=>l.includes('|')).length})</span>
-                <span onclick="sterge(${i})" style="color:red; cursor:pointer; font-weight:bold; padding:0 10px;">X</span>
+            <div style="display:flex; justify-content:space-between; background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:8px; border:1px solid #ddd; align-items:center;">
+                <span onclick="preparaSesiune(${i})" style="cursor:pointer; flex:1; font-weight:bold;">🧠 ${item.titlu} (${item.continut.split('\n').filter(l=>l.includes('|')).length})</span>
+                <span onclick="sterge(${i})" style="color:red; cursor:pointer; font-weight:bold; font-size:18px; padding:0 10px;">X</span>
             </div>
         `).join('');
         
-        let sel = document.getElementById('select-target-test');
-        sel.innerHTML = db.map((item, i) => `<option value="${i}">${item.titlu}</option>`).join('');
+        document.getElementById('select-target-test').innerHTML = db.map((item, i) => `<option value="${i}">${item.titlu}</option>`).join('');
     }
 
     function preparaSesiune(i) {
-        let db = getData();
+        let db = JSON.parse(localStorage.getItem('mea_data_final') || '[]');
         currentTitle = db[i].titlu;
         allPool = db[i].continut.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
             return { q: p[0], correct: p[1], options: p.slice(1) };
         });
         alegeSiPorneste();
+        document.getElementById('reader-area').scrollIntoView({behavior: "smooth"});
     }
 
     function alegeSiPorneste() {
@@ -134,10 +146,10 @@
         let item = currentSession[currentIdx];
         let shuffled = [...item.options].sort(() => Math.random() - 0.5);
         let qHtml = item.q.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
-        let html = `<div><b>${currentTitle}</b><br><small>${currentIdx+1}/10</small><br><br>${qHtml}</div><br>`;
+        
+        let html = `<div><b style="color:#28a745">${currentTitle}</b><br><small>Întrebarea ${currentIdx+1}/10</small><br><br>${qHtml}</div><br>`;
         shuffled.forEach(opt => {
-            let optWords = opt.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
-            html += `<div class="option-container"><div>${optWords}</div><button class="btn-check" onclick="checkAnswer(this.parentElement, '${opt}', '${item.correct}')">OK</button></div>`;
+            html += `<div class="option-container"><div>${opt}</div><button class="btn-check" onclick="checkAnswer(this.parentElement, '${opt}', '${item.correct}')">OK</button></div>`;
         });
         document.getElementById('reader-area').innerHTML = html;
     }
@@ -149,27 +161,25 @@
 
         if(sel === cor) {
             el.classList.add('correct'); score++;
-            document.getElementById('status-text').innerText = "Corect! ✅";
             let newGM = gMistakes.filter(m => m.q !== currentQ.q);
             localStorage.setItem('global_mistakes', JSON.stringify(newGM));
         } else {
             el.classList.add('wrong');
-            document.getElementById('status-text').innerText = "Greșit! ❌";
             if(!gMistakes.some(m => m.q === currentQ.q)) {
                 gMistakes.push(currentQ);
                 localStorage.setItem('global_mistakes', JSON.stringify(gMistakes));
             }
         }
-        setTimeout(() => { currentIdx++; showQuestion(); }, 1200);
+        setTimeout(() => { currentIdx++; showQuestion(); }, 1000);
     }
 
     function showFinal() {
         document.getElementById('reader-area').innerHTML = `
             <div style="text-align:center">
-                <h2>Scor: ${score}/10</h2>
-                <button class="btn propriu" style="width:100%; margin-bottom:8px" onclick="alegeSiPorneste()">🚀 URMĂTOARELE 10 (incl. greșeli)</button>
-                <button class="btn btn-test" style="width:100%; margin-bottom:8px" onclick="startNewRound(currentSession)">🔄 REPETĂ ACEST SET</button>
-                <button class="btn" style="width:100%; background:grey" onclick="location.reload()">MENIU</button>
+                <h2>Rundă terminată: ${score}/10</h2>
+                <button class="btn b-propriu" style="width:100%; margin-bottom:8px; padding:15px; font-size:16px;" onclick="alegeSiPorneste()">🚀 URMĂTOARELE 10</button>
+                <button class="btn b-quiz" style="width:100%; margin-bottom:8px; padding:15px; font-size:16px;" onclick="startNewRound(currentSession)">🔄 REPETĂ ACEST SET</button>
+                <button class="btn" style="width:100%; background:grey; padding:15px;" onclick="location.reload()">MENIU</button>
             </div>`;
     }
 
@@ -181,33 +191,45 @@
             });
     }
 
+    function updateFontSize() {
+        let val = document.getElementById('font-slider').value;
+        document.getElementById('font-val').innerText = val;
+        document.documentElement.style.setProperty('--font-size', val + 'px');
+        localStorage.setItem('cfg_font', val);
+    }
+
+    function loadSettings() {
+        let f = localStorage.getItem('cfg_font') || 20;
+        document.getElementById('font-slider').value = f;
+        updateFontSize();
+    }
+
+    function toggleSettings() { let s = document.getElementById('settings-panel'); s.style.display = (s.style.display==='block'?'none':'block'); }
+    function scrollToTests() { document.getElementById('list-container').scrollIntoView({behavior: "smooth"}); }
+    
+    function importNou() {
+        let t = prompt("Titlu Test Nou:");
+        let c = document.getElementById('append-area').value;
+        if(!t || !c) return;
+        let db = JSON.parse(localStorage.getItem('mea_data_final') || '[]');
+        db.push({ titlu: t, continut: c });
+        localStorage.setItem('mea_data_final', JSON.stringify(db));
+        refreshLista();
+    }
+
     function appendQuestions() {
-        let db = getData();
+        let db = JSON.parse(localStorage.getItem('mea_data_final') || '[]');
         let idx = document.getElementById('select-target-test').value;
         let noi = document.getElementById('append-area').value;
         if(!noi) return;
         db[idx].continut += "\n" + noi;
         localStorage.setItem('mea_data_final', JSON.stringify(db));
         document.getElementById('append-area').value = "";
-        refreshLista(); alert("Întrebări adăugate!");
+        refreshLista(); alert("Adăugat!");
     }
 
-    function exportData() {
-        let data = localStorage.getItem('mea_data_final');
-        prompt("Copiază acest cod și salvează-l într-o notiță (e backup-ul tău):", data);
-    }
-
-    function importData() {
-        let data = prompt("Lipește aici codul de backup:");
-        if(data) {
-            localStorage.setItem('mea_data_final', data);
-            refreshLista();
-        }
-    }
-
-    function sterge(i) { if(confirm("Ștergi testul?")) { let db = getData(); db.splice(i, 1); localStorage.setItem('mea_data_final', JSON.stringify(db)); refreshLista(); } }
-    function toggleSettings() { let s = document.getElementById('settings-panel'); s.style.display = (s.style.display==='block'?'none':'block'); }
-    function clearMistakes() { localStorage.setItem('global_mistakes', '[]'); refreshLista(); }
+    function sterge(i) { if(confirm("Ștergi?")) { let db = JSON.parse(localStorage.getItem('mea_data_final') || '[]'); db.splice(i, 1); localStorage.setItem('mea_data_final', JSON.stringify(db)); refreshLista(); } }
+    function clearMistakes() { localStorage.setItem('global_mistakes', '[]'); refreshLista(); alert("Baza de greșeli a fost golită."); }
 </script>
 </body>
 </html>
