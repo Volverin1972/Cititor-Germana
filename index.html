@@ -3,188 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert - Recuperare & Stabilizare</title>
+    <title>Germana Expert - Memorie Greșeli</title>
     <style>
         :root { --bg-reader: #ffffff; --font-size: 20px; --top-font-size: 17px; }
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; padding-top: 85px; }
-        
-        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 80px; background: #28a745; color: white; 
-                   display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
-                   font-size: var(--top-font-size); }
-        
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 80px; background: #28a745; color: white; display: flex; align-items: center; justify-content: space-between; z-index: 1000; font-weight: bold; padding: 0 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: var(--top-font-size); }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .section-title { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 10px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .btn { border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         .propriu { background: #007bff; } .btn-test { background: #673ab7; }
-        
-        /* Module Cititor & Quiz */
         .clickable-word { cursor: pointer; padding: 2px; border-radius: 4px; display: inline-block; }
-        .clickable-word:hover { background: #e8f5e9; color: #28a745; }
-        
         .option-container { display: flex; align-items: center; background: #f8f9fa; border: 2px solid #ddd; border-radius: 10px; margin: 8px 0; padding: 5px 15px; }
         .btn-check { background: #28a745; color: white; border: none; border-radius: 6px; padding: 8px 12px; font-weight: bold; cursor: pointer; margin-left: auto; }
-        
         .correct { background: #d4edda !important; border-color: #28a745 !important; }
         .wrong { background: #f8d7da !important; border-color: #dc3545 !important; }
-        
-        #reader-area { line-height: 1.6; font-size: var(--font-size); background: var(--bg-reader); min-height: 150px; padding: 15px; border-radius: 8px; white-space: pre-wrap; }
-        
-        .settings-panel { display: none; position: fixed; top: 85px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 80vh; overflow-y: auto; }
-        input, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
+        #reader-area { line-height: 1.6; font-size: var(--font-size); background: var(--bg-reader); min-height: 150px; padding: 15px; border-radius: 8px; }
+        .settings-panel { display: none; position: fixed; top: 85px; left: 10px; right: 10px; background: white; z-index: 2000; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #28a745; max-height: 85vh; overflow-y: auto; }
+        .mistake-badge { background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
     </style>
 </head>
 <body>
 
 <div id="top-bar">
-    <span id="status-text">Germana Expert</span>
-    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⚙️</button>
+    <span id="status-text">Lecție Personalizată</span>
+    <button onclick="toggleSettings()" style="background:none; border:none; color:white; font-size:24px;">⚙️</button>
 </div>
 
 <div id="settings-panel" class="settings-panel">
-    <h3 style="margin-top:0">⚙️ Setări Aplicație</h3>
-    <div style="margin-bottom:10px;">
-        <label>Mărime Traducere: <span id="top-font-val">17</span>px</label>
-        <input type="range" id="top-font-slider" min="14" max="28" value="17" onchange="saveConfig()">
-    </div>
-    <div style="margin-bottom:10px;">
-        <label>Mărime Text Conținut: <span id="main-font-val">20</span>px</label>
-        <input type="range" id="main-font-slider" min="16" max="36" value="20" onchange="saveConfig()">
-    </div>
+    <h3>⚙️ Setări și Statistici</h3>
+    <div id="stat-area" style="margin-bottom:15px; font-size:14px; background:#f8f9fa; padding:10px; border-radius:8px;"></div>
+    <button class="btn" style="width:100%; background:#dc3545; margin-bottom:10px;" onclick="clearMistakes()">Golește Baza de Greșeli</button>
     <hr>
-    <div style="background: #f0f7ff; padding: 10px; border-radius: 8px;">
-        <label><b>📥 Importă Material Nou:</b></label>
-        <textarea id="web-import-area" style="height:60px" placeholder="Text sau Intrebare|Raspuns|Gresit"></textarea>
-        <input type="text" id="web-import-title" placeholder="Titlu">
-        <div style="display:flex; gap:5px; margin-top:5px;">
-            <button class="btn propriu" style="flex:1" onclick="importManual('L')">Lectură</button>
-            <button class="btn btn-test" style="flex:1" onclick="importManual('T')">Test</button>
-        </div>
-    </div>
-    <button class="btn" style="width:100%; margin-top:15px; background:#343a40" onclick="toggleSettings()">Închide</button>
+    <label>Test Destinație (pentru Extinde):</label>
+    <select id="select-target-test" style="width:100%; padding:10px; margin-bottom:10px;"></select>
+    <textarea id="append-area" style="width:100%; height:80px" placeholder="Intrebare | Corect | Gresit"></textarea>
+    <button class="btn btn-test" style="width:100%; margin-top:5px;" onclick="appendQuestions()">➕ EXTINDE TEST</button>
+    <button class="btn" style="width:100%; margin-top:15px; background:#343a40" onclick="toggleSettings()">ÎNCHIDE</button>
 </div>
 
 <div class="card">
-    <div class="grid">
-        <button class="btn propriu" style="background:#4caf50" onclick="incarcaB1()">B1 Verbe</button>
-        <button class="btn propriu" onclick="toggleSectiune('zona-adaugare')">+ ADAUGĂ</button>
-    </div>
-    <div id="zona-adaugare" class="hidden">
-        <input type="text" id="inp-titlu" placeholder="Titlu...">
-        <textarea id="inp-text" style="height:80px" placeholder="Conținut..."></textarea>
-        <div style="display:flex; gap:5px; margin-top:5px;">
-            <button class="btn propriu" style="flex:1" onclick="salveazaDirect('L')">Lectură</button>
-            <button class="btn btn-test" style="flex:1" onclick="salveazaDirect('T')">Test</button>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <span class="section-title">📂 Biblioteca Mea (Lecturi & Teste)</span>
     <div id="lista-materiale"></div>
 </div>
 
 <div class="card">
-    <div id="reader-area">Selectează un material din listă...</div>
+    <div id="reader-area">Alege un test. Sistemul va include automat greșelile tale anterioare.</div>
 </div>
 
 <script>
-    let quizOriginal = [], quizCurrent = [], mistakes = [], currentIdx = 0, score = 0, currentTitle = "";
+    let allPool = [], currentSession = [], currentIdx = 0, score = 0, currentTitle = "";
 
-    window.onload = () => {
-        migrareDate(); // Verifică dacă există date vechi de recuperat
-        loadConfig();
-        refreshLista();
-    };
-
-    function migrareDate() {
-        // Combină datele din toate cheile posibile folosite anterior
-        let d1 = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        let d2 = JSON.parse(localStorage.getItem('germana_data') || '[]');
-        let combinat = [...d1, ...d2];
-        
-        // Elimină duplicatele după titlu
-        let unic = combinat.filter((v,i,a)=>a.findIndex(t=>(t.titlu === v.titlu))===i);
-        localStorage.setItem('mea_data', JSON.stringify(unic));
-    }
-
-    function saveConfig() {
-        const conf = {
-            top: document.getElementById('top-font-slider').value,
-            main: document.getElementById('main-font-slider').value
-        };
-        localStorage.setItem('app_config_final', JSON.stringify(conf));
-        applyStyles(conf);
-    }
-
-    function loadConfig() {
-        const saved = JSON.parse(localStorage.getItem('app_config_final') || '{"top":17, "main":20}');
-        document.getElementById('top-font-slider').value = saved.top;
-        document.getElementById('main-font-slider').value = saved.main;
-        applyStyles(saved);
-    }
-
-    function applyStyles(conf) {
-        document.documentElement.style.setProperty('--top-font-size', conf.top + 'px');
-        document.documentElement.style.setProperty('--font-size', conf.main + 'px');
-        document.getElementById('top-font-val').innerText = conf.top;
-        document.getElementById('main-font-val').innerText = conf.main;
-    }
+    window.onload = refreshLista;
 
     function refreshLista() {
-        const cont = document.getElementById('lista-materiale');
         let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        if(db.length === 0) { cont.innerHTML = "<small>Niciun material salvat.</small>"; return; }
-        cont.innerHTML = db.map((item, i) => `
-            <div class="item-row">
-                <span onclick="deschide(${i})" style="cursor:pointer; flex:1;"><b>${item.tip === 'T' ? '🧠' : '📄'} ${item.titlu}</b></span>
-                <span onclick="sterge(${i})" style="color:red; cursor:pointer; padding:0 10px;">Șterge</span>
+        let gMistakes = JSON.parse(localStorage.getItem('global_mistakes') || '[]');
+        
+        document.getElementById('stat-area').innerHTML = `Întrebări în "Baza de Greșeli": <b>${gMistakes.length}</b>`;
+        
+        document.getElementById('lista-materiale').innerHTML = db.map((item, i) => `
+            <div style="display:flex; justify-content:space-between; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:5px; border:1px solid #ddd;">
+                <span onclick="preparaSesiune(${i})" style="cursor:pointer; flex:1;"><b>🧠 ${item.titlu}</b> <small>(${item.continut.split('\n').filter(l=>l.includes('|')).length})</small></span>
+                <span onclick="sterge(${i})" style="color:red; cursor:pointer; font-weight:bold; padding-left:10px;">X</span>
             </div>
         `).join('');
-    }
-
-    function deschide(i) {
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        let material = db[i];
-        currentTitle = material.titlu;
         
-        if(material.tip === 'T') {
-            preparaQuiz(material.continut);
-        } else {
-            afiseazaLectura(material.continut);
-        }
+        let sel = document.getElementById('select-target-test');
+        sel.innerHTML = db.map((item, i) => `<option value="${i}">${item.titlu}</option>`).join('');
     }
 
-    function afiseazaLectura(text) {
-        let html = `<b>${currentTitle}</b><hr>`;
-        html += text.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
-        document.getElementById('reader-area').innerHTML = html;
-        document.getElementById('status-text').innerText = "Apasă pe cuvinte";
-    }
-
-    function preparaQuiz(text) {
-        quizOriginal = text.split('\n').map(line => {
+    function preparaSesiune(i) {
+        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        currentTitle = db[i].titlu;
+        allPool = db[i].continut.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
             return { q: p[0], correct: p[1], options: p.slice(1) };
-        }).filter(x => x.q && x.correct);
-        startRound(quizOriginal);
+        });
+        alegeSiPorneste();
     }
 
-    function startRound(qs) {
-        quizCurrent = [...qs]; mistakes = []; currentIdx = 0; score = 0;
+    function alegeSiPorneste() {
+        let gMistakes = JSON.parse(localStorage.getItem('global_mistakes') || '[]');
+        allPool.sort(() => Math.random() - 0.5);
+        
+        let sessionSet = [];
+        
+        // Luăm 2 greșeli din baza globală (dacă există)
+        let fromMistakes = gMistakes.sort(() => Math.random() - 0.5).slice(0, 2);
+        sessionSet.push(...fromMistakes);
+        
+        // Luăm restul până la 10 din bazinul normal
+        let needed = 10 - sessionSet.length;
+        // Evităm duplicatele dacă o greșeală e deja în pool
+        let freshOnes = allPool.filter(p => !sessionSet.some(m => m.q === p.q)).slice(0, needed);
+        sessionSet.push(...freshOnes);
+        
+        startNewRound(sessionSet.sort(() => Math.random() - 0.5));
+    }
+
+    function startNewRound(questions) {
+        currentSession = questions;
+        currentIdx = 0; score = 0;
         showQuestion();
     }
 
     function showQuestion() {
-        if(currentIdx >= quizCurrent.length) { showFinal(); return; }
-        let item = quizCurrent[currentIdx];
+        if(currentIdx >= currentSession.length) { showFinal(); return; }
+        let item = currentSession[currentIdx];
         let shuffled = [...item.options].sort(() => Math.random() - 0.5);
-        
         let qHtml = item.q.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
-        let html = `<div><b>${currentTitle} (${currentIdx+1}/${quizCurrent.length})</b><br><br>${qHtml}</div><br>`;
         
+        let html = `<div><b>${currentTitle}</b><br><small>Întrebarea ${currentIdx+1}/10</small><br><br>${qHtml}</div><br>`;
         shuffled.forEach(opt => {
             let optWords = opt.split(/\s+/).map(w => `<span class="clickable-word" onclick="tradu(this)">${w}</span>`).join(' ');
             html += `<div class="option-container"><div>${optWords}</div><button class="btn-check" onclick="checkAnswer(this.parentElement, '${opt}', '${item.correct}')">OK</button></div>`;
@@ -194,13 +122,38 @@
 
     function checkAnswer(el, sel, cor) {
         document.querySelectorAll('.btn-check').forEach(b => b.disabled = true);
-        if(sel === cor) { el.classList.add('correct'); score++; document.getElementById('status-text').innerText = "Corect! ✅"; }
-        else { el.classList.add('wrong'); mistakes.push(quizCurrent[currentIdx]); document.getElementById('status-text').innerText = "Greșit! ❌"; }
-        setTimeout(() => { currentIdx++; showQuestion(); }, 1500);
+        let currentQ = currentSession[currentIdx];
+        let gMistakes = JSON.parse(localStorage.getItem('global_mistakes') || '[]');
+
+        if(sel === cor) {
+            el.classList.add('correct'); score++;
+            document.getElementById('status-text').innerText = "Corect! ✅";
+            // Dacă a fost o greșeală veche și acum e corectă, o scoatem din baza globală
+            let newGM = gMistakes.filter(m => m.q !== currentQ.q);
+            localStorage.setItem('global_mistakes', JSON.stringify(newGM));
+        } else {
+            el.classList.add('wrong');
+            document.getElementById('status-text').innerText = "Greșit! ❌";
+            // Adăugăm în baza globală dacă nu e deja
+            if(!gMistakes.some(m => m.q === currentQ.q)) {
+                gMistakes.push(currentQ);
+                localStorage.setItem('global_mistakes', JSON.stringify(gMistakes));
+            }
+        }
+        setTimeout(() => { currentIdx++; showQuestion(); }, 1200);
+    }
+
+    function showFinal() {
+        document.getElementById('reader-area').innerHTML = `
+            <div style="text-align:center">
+                <h2>Rundă terminată: ${score}/10</h2>
+                <button class="btn propriu" style="width:100%; margin-bottom:8px" onclick="alegeSiPorneste()">🚀 URMĂTOARELE 10 (incl. greșeli)</button>
+                <button class="btn btn-test" style="width:100%; margin-bottom:8px" onclick="startNewRound(currentSession)">🔄 REPETĂ ACEST SET</button>
+                <button class="btn" style="width:100%; background:grey" onclick="location.reload()">MENIU</button>
+            </div>`;
     }
 
     function tradu(el) {
-        event.stopPropagation();
         let word = el.innerText.replace(/[.,!?;:()]/g, '');
         fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${word}`)
             .then(r => r.json()).then(data => {
@@ -208,49 +161,18 @@
             });
     }
 
-    function showFinal() {
-        document.getElementById('reader-area').innerHTML = `
-            <div style="text-align:center">
-                <h2>Scor: ${score}/${quizCurrent.length}</h2>
-                <button class="btn propriu" style="width:100%" onclick="startRound(quizOriginal)">Repetă Tot</button>
-                ${mistakes.length > 0 ? `<button class="btn btn-test" style="width:100%; margin-top:10px" onclick="startRound(mistakes)">Repetă greșelile (${mistakes.length})</button>` : ''}
-                <button class="btn" style="width:100%; margin-top:10px; background:grey" onclick="location.reload()">Meniu principal</button>
-            </div>`;
-    }
-
-    function salveazaDirect(tip) {
-        let t = document.getElementById('inp-titlu').value || "Nesalvat";
-        let c = document.getElementById('inp-text').value;
-        if(!c) return;
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        db.push({ titlu: t, continut: c, tip: tip });
-        localStorage.setItem('mea_data', JSON.stringify(db));
-        refreshLista(); toggleSectiune('zona-adaugare');
-    }
-
-    function importManual(tip) {
-        let t = document.getElementById('web-import-title').value || "Import";
-        let c = document.getElementById('web-import-area').value;
-        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-        db.push({ titlu: t, continut: c, tip: tip });
-        localStorage.setItem('mea_data', JSON.stringify(db));
-        refreshLista(); toggleSettings();
-    }
-
-    function sterge(i) {
-        if(confirm("Ștergi definitiv?")) {
-            let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
-            db.splice(i, 1);
-            localStorage.setItem('mea_data', JSON.stringify(db));
-            refreshLista();
-        }
-    }
-
+    function clearMistakes() { if(confirm("Ștergi toate greșelile memorate?")) { localStorage.setItem('global_mistakes', '[]'); refreshLista(); } }
     function toggleSettings() { let s = document.getElementById('settings-panel'); s.style.display = (s.style.display==='block'?'none':'block'); }
-    function toggleSectiune(id) { document.getElementById(id).classList.toggle('hidden'); }
-    
-    function incarcaB1() {
-        preparaQuiz("Ich interessiere mich ___ Musik. | für | an | auf | über\nEr wartet ___ den Freund. | auf | an | vor | mit");
+    function sterge(i) { if(confirm("Ștergi testul?")) { let db = JSON.parse(localStorage.getItem('mea_data') || '[]'); db.splice(i, 1); localStorage.setItem('mea_data', JSON.stringify(db)); refreshLista(); } }
+    function appendQuestions() {
+        let db = JSON.parse(localStorage.getItem('mea_data') || '[]');
+        let idx = document.getElementById('select-target-test').value;
+        let noi = document.getElementById('append-area').value;
+        if(!noi) return;
+        db[idx].continut += "\n" + noi;
+        localStorage.setItem('mea_data', JSON.stringify(db));
+        document.getElementById('append-area').value = "";
+        refreshLista(); alert("Adăugat cu succes!");
     }
 </script>
 </body>
