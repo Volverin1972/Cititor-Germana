@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert ULTIMATE - Navigare Fix</title>
+    <title>Germana Expert ULTIMATE - Final Fix</title>
     <style>
         :root { 
             --bg-app: #f0f2f5; --bg-card: #ffffff; 
@@ -13,7 +13,6 @@
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg-app); padding-top: 75px; transition: 0.3s; }
         
-        /* Top Bar cu Navigare */
         #top-bar { position: fixed; top: 0; width: 100%; height: 70px; background: var(--main-green); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-weight: bold; }
         .nav-btns { display: flex; gap: 15px; align-items: center; }
         .nav-icon { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 18px; }
@@ -26,7 +25,6 @@
         .card { background: var(--bg-card); margin: 12px; padding: 20px; border-radius: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
         .hidden { display: none !important; }
 
-        /* Panou Audio FIXAT SUS */
         .audio-bar { position: sticky; top: 70px; background: white; z-index: 900; display: flex; justify-content: center; gap: 20px; padding: 10px; border-bottom: 2px solid #eee; margin: -20px -20px 20px -20px; border-radius: 18px 18px 0 0; }
         .btn-circle { width: 45px; height: 45px; border-radius: 50%; border: none; background: #f8f9fa; cursor: pointer; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
@@ -37,8 +35,8 @@
         #trans-box { min-height: 50px; background: #e9f7ef; color: #155724; font-weight: bold; font-size: var(--f-size-trans); text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green); }
 
         .test-opt { display: flex; align-items: center; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; }
-        .ans-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724; }
-        .ans-wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        .ans-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; }
+        .ans-wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
 
         .side-panel { position: fixed; top: 0; right: 0; width: 90%; height: 100%; background: white; z-index: 2000; padding: 25px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; }
         .side-panel.open { transform: translateX(0); }
@@ -82,10 +80,8 @@
         <button class="btn-circle" onclick="pauseAudio()">⏸️</button>
         <button class="btn-circle" onclick="stopAudio()">⏹️</button>
     </div>
-
     <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
     <div id="reader-display"></div>
-    
     <div id="test-ui" class="hidden" style="margin-top:20px;"></div>
     <button class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
 </div>
@@ -98,21 +94,9 @@
     <input type="range" id="cfg-f1" min="14" max="40" oninput="applyCfg()">
     <label>Viteză Voce:</label>
     <input type="range" id="cfg-rate" min="0.4" max="1.6" step="0.1" value="1" onchange="applyCfg()">
-
-    <hr>
-    <h3>➕ Adaugă Material</h3>
-    <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
-    <select id="in-type"><option value="L">📄 Lectură</option><option value="T">🧠 Test</option></select>
-    <input type="text" id="in-title" placeholder="Titlu">
-    <textarea id="in-body" style="height:100px" placeholder="Conținut..."></textarea>
-    <button class="lvl-btn active-lvl" style="width:100%;" onclick="saveData()">💾 SALVEAZĂ</button>
-
     <hr>
     <button class="lvl-btn" style="width:100%; background:#007bff" onclick="doExport()">📥 SALVEAZĂ BACKUP</button>
-    <div style="margin-top:10px;">
-        <label>Restaurare Date (.json):</label>
-        <input type="file" id="import-file" accept=".json" onchange="doImport(this)">
-    </div>
+    <div style="margin-top:10px;"><label>Restaurare Date (.json):</label><input type="file" id="import-file" accept=".json" onchange="doImport(this)"></div>
     <button class="lvl-btn" style="width:100%; background:#343a40; margin-top:20px" onclick="toggleSet()">ÎNCHIDE</button>
 </div>
 
@@ -159,7 +143,7 @@
                 <span onclick="startWork('${curLvl}', ${db[curLvl].indexOf(item)})" style="cursor:pointer; flex:1; font-weight:bold;">${curTab==='L'?'📄':'🧠'} ${item.title}</span>
                 <button onclick="delItem('${curLvl}', ${db[curLvl].indexOf(item)})" style="color:#ff4d4d; border:none; background:none; font-weight:bold; padding:10px;">X</button>
             </div>
-        `).join('') || '<p style="text-align:center;">Niciun material salvat.</p>';
+        `).join('') || '<p style="text-align:center;">Gol.</p>';
     }
 
     function startWork(l, idx) {
@@ -198,7 +182,7 @@
             let p = line.split('|').map(x => x.trim());
             return { q: p[0], cor: p[1], all: p.slice(1) };
         });
-        let size = parseInt(prompt("Câte întrebări vrei?", "10")) || 10;
+        let size = parseInt(prompt("Câte întrebări?", "10")) || 10;
         let misPool = mistakes.sort(() => 0.5 - Math.random()).slice(0, 2);
         let fresh = pool.sort(() => 0.5 - Math.random()).slice(0, size - misPool.length);
         curSession = [...misPool, ...fresh].sort(() => 0.5 - Math.random());
@@ -207,27 +191,36 @@
 
     function showQ() {
         if(curIdx >= curSession.length) { 
-            document.getElementById('reader-display').innerHTML = `<h2>Scor Final: ${score}/${curSession.length}</h2>`;
-            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="backToList()">ÎNAPOI LA LISTĂ</button>`;
+            document.getElementById('reader-display').innerHTML = `<h2>Scor: ${score}/${curSession.length}</h2>`;
+            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="backToList()">FINAL</button>`;
             return; 
         }
         let itm = curSession[curIdx];
         let qTxt = itm.q.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
-        document.getElementById('reader-display').innerHTML = `<p>Întrebarea ${curIdx+1}/${curSession.length}</p><h3>${qTxt}</h3>`;
+        document.getElementById('reader-display').innerHTML = `<h3>${qTxt}</h3>`;
         let html = itm.all.sort(() => 0.5 - Math.random()).map(o => {
             let words = o.split(/\s+/).map(w => `<span class="word" onclick="trans(this); event.stopPropagation();">${w}</span>`).join(' ');
-            return `<div class="test-opt" onclick="evalAns(this, '${o}', '${itm.cor}')"><div>${words}</div></div>`;
+            return `<div class="test-opt" data-ans="${o}" onclick="evalAns(this, '${o}', '${itm.cor}')"><div>${words}</div></div>`;
         }).join('');
         document.getElementById('test-ui').innerHTML = html;
     }
 
     function evalAns(el, sel, cor) {
-        document.querySelectorAll('.test-opt').forEach(o => o.style.pointerEvents = 'none');
+        const options = document.querySelectorAll('.test-opt');
+        options.forEach(o => o.style.pointerEvents = 'none');
         let itm = curSession[curIdx];
-        if(sel === cor) { el.classList.add('ans-correct'); score++; mistakes = mistakes.filter(m => m.q !== itm.q); }
-        else { el.classList.add('ans-wrong'); if(!mistakes.some(m => m.q === itm.q)) mistakes.push(itm); }
+        
+        if(sel === cor) {
+            el.classList.add('ans-correct'); score++;
+            mistakes = mistakes.filter(m => m.q !== itm.q);
+        } else {
+            el.classList.add('ans-wrong');
+            // ARATĂ VARIANTA CORECTĂ CU VERDE
+            options.forEach(o => { if(o.getAttribute('data-ans') === cor) o.classList.add('ans-correct'); });
+            if(!mistakes.some(m => m.q === itm.q)) mistakes.push(itm);
+        }
         localStorage.setItem('gm_mistakes', JSON.stringify(mistakes));
-        setTimeout(() => { curIdx++; showQ(); }, 1200);
+        setTimeout(() => { curIdx++; showQ(); }, 1800); // Timp puțin mai lung să vezi răspunsul corect
     }
 
     function playAll() { 
@@ -235,52 +228,46 @@
         let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText);
         ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut);
     }
+
     function playSelect() {
-        let sel = window.getSelection().toString();
-        if(!sel) { alert("Selectează textul cu degetul mai întâi!"); return; }
+        let selectedText = window.getSelection().toString();
+        if (!selectedText || selectedText.trim() === "") {
+            alert("Te rog selectează (evidențiază) un text cu degetul/mouse-ul mai întâi!");
+            return;
+        }
         synth.cancel();
-        let ut = new SpeechSynthesisUtterance(sel);
-        ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut);
+        let ut = new SpeechSynthesisUtterance(selectedText);
+        ut.lang = 'de-DE';
+        ut.rate = config.rate;
+        synth.speak(ut);
     }
+
     function pauseAudio() { synth.pause(); }
     function stopAudio() { synth.cancel(); }
 
-    function saveData() {
-        let l = document.getElementById('in-lvl').value, t = document.getElementById('in-type').value;
-        let title = document.getElementById('in-title').value, body = document.getElementById('in-body').value;
-        if(!title || !body) return alert("Completează tot!");
-        db[l].push({ title, body, type: t });
-        localStorage.setItem('gm_db_v3', JSON.stringify(db));
-        alert("Salvat!"); renderList();
+    function goHome() { 
+        document.getElementById('lvl-screen').classList.add('hidden');
+        document.getElementById('work-screen').classList.add('hidden');
+        document.getElementById('home-screen').classList.remove('hidden');
+        document.getElementById('nav-title').innerText = "GERMANA MASTER";
+        stopAudio();
     }
-
+    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
+    function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     function doExport() {
         let data = { db, mistakes, config };
         let blob = new Blob([JSON.stringify(data)], {type:"application/json"});
         let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_germana.json"; a.click();
     }
-
     function doImport(input) {
-        let file = input.files[0];
-        if(!file) return;
-        let reader = new FileReader();
-        reader.onload = function(e) {
-            let data = JSON.parse(e.target.result);
-            if(data.db) {
-                db = data.db; mistakes = data.mistakes || []; config = data.config || config;
-                localStorage.setItem('gm_db_v3', JSON.stringify(db));
-                localStorage.setItem('gm_mistakes', JSON.stringify(mistakes));
-                localStorage.setItem('gm_config', JSON.stringify(config));
-                alert("Date restaurate!"); location.reload();
-            }
+        let file = input.files[0]; if(!file) return;
+        let r = new FileReader();
+        r.onload = (e) => {
+            let d = JSON.parse(e.target.result);
+            if(d.db) { db=d.db; mistakes=d.mistakes||[]; config=d.config||config; localStorage.setItem('gm_db_v3', JSON.stringify(db)); location.reload(); }
         };
-        reader.readAsText(file);
+        r.readAsText(file);
     }
-
-    function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
-    function goHome() { location.reload(); }
-    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
-    function delItem(l, idx) { if(confirm("Ștergi?")) { db[l].splice(idx, 1); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); } }
 </script>
 </body>
 </html>
