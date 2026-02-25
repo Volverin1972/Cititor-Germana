@@ -25,6 +25,9 @@
         .card { background: var(--bg-card); margin: 12px; padding: 20px; border-radius: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
         .hidden { display: none !important; }
 
+        .audio-bar { position: sticky; top: 70px; background: white; z-index: 900; display: flex; justify-content: center; gap: 20px; padding: 10px; border-bottom: 2px solid #eee; margin: -20px -20px 20px -20px; border-radius: 18px 18px 0 0; }
+        .btn-circle { width: 45px; height: 45px; border-radius: 50%; border: none; background: #f8f9fa; cursor: pointer; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
         #reader-display { line-height: 1.8; font-size: var(--f-size-read); min-height: 250px; transition: 0.3s; padding: 10px; border-radius: 10px; }
         .word { cursor: pointer; padding: 0 3px; border-radius: 5px; display: inline-block; transition: 0.2s; }
         .highlight-green { background: #d4edda !important; color: #155724 !important; font-weight: bold; border: 1px solid #c3e6cb; }
@@ -32,18 +35,20 @@
         #trans-box { min-height: 50px; background: #e9f7ef; color: #155724; font-weight: bold; font-size: var(--f-size-trans); text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green); }
 
         .test-opt { display: flex; align-items: center; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; }
-        .ans-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; animation: glow 0.8s ease-in-out; }
+        .ans-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; }
         .ans-wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
 
-        /* Efecte vizuale noi */
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
-        @keyframes glow { 0% { box-shadow: 0 0 5px #28a745; } 50% { box-shadow: 0 0 20px #28a745; } 100% { box-shadow: 0 0 5px #28a745; } }
-        .shake-effect { animation: shake 0.4s ease-in-out; background: #f8d7da !important; }
-        .glow-effect { background: #d4edda !important; }
-        .placeholder-box { border-bottom: 2px solid #555; min-width: 60px; display: inline-block; text-align: center; color: var(--main-green); font-weight: bold; padding: 0 5px; }
+        /* Efecte noi */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        @keyframes glow { 0% { box-shadow: 0 0 5px var(--main-green); } 50% { box-shadow: 0 0 20px var(--main-green); } 100% { box-shadow: 0 0 5px var(--main-green); } }
+        .shake-effect { animation: shake 0.3s ease-in-out; border: 2px solid #dc3545 !important; background: #f8d7da !important; }
+        .glow-effect { animation: glow 0.8s ease-in-out; border: 2px solid var(--main-green) !important; background: #d4edda !important; }
+        .placeholder-box { border-bottom: 3px solid #555; min-width: 80px; display: inline-block; text-align: center; color: var(--main-green); font-weight: bold; padding: 0 10px; margin: 0 5px; }
 
         .side-panel { position: fixed; top: 0; right: 0; width: 90%; height: 100%; background: white; z-index: 2000; padding: 25px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; }
         .side-panel.open { transform: translateX(0); }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -51,15 +56,16 @@
 <div id="top-bar">
     <div class="nav-btns">
         <button class="nav-icon" onclick="goHome()">⬅️</button>
+        <button class="nav-icon" onclick="history.forward()">➡️</button>
     </div>
     <span id="nav-title">GERMANA MASTER</span>
     <button onclick="toggleSet()" style="background:none; border:none; color:white; font-size:28px;">⚙️</button>
 </div>
 
 <div id="home-screen">
-    <div id="resume-box" class="card hidden" style="border: 2px solid var(--main-green);">
-        <p style="margin:0; font-weight:bold;">Ai un test început. Vrei să continui?</p>
-        <button class="lvl-btn active-lvl" style="width:100%; margin-top:10px;" onclick="resumeTest()">DA, CONTINUĂ</button>
+    <div id="resume-card" class="card hidden" style="border: 2px solid var(--main-green); text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 10px;">Vrei să continui testul unde ai rămas?</p>
+        <button class="lvl-btn active-lvl" style="width: 100%;" onclick="resumeProgress()">DA, CONTINUĂ</button>
     </div>
     <div class="grid-levels">
         <button class="lvl-btn" onclick="openLvl('A1')">A1</button>
@@ -80,26 +86,79 @@
 </div>
 
 <div id="work-screen" class="card hidden">
+    <div id="audio-ui" class="audio-bar hidden">
+        <button class="btn-circle" onclick="playAll()">▶️</button>
+        <button class="btn-circle" onclick="playSelect()">🎯</button>
+        <button class="btn-circle" onclick="pauseAudio()">⏸️</button>
+        <button class="btn-circle" onclick="stopAudio()">⏹️</button>
+    </div>
     <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
     <div id="reader-display"></div>
     <div id="test-ui" class="hidden" style="margin-top:20px;"></div>
-    <button id="btn-back-list" class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
+    <button class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
 </div>
 
 <div id="set-panel" class="side-panel">
     <h3>⚙️ Setări & Backup</h3>
+    
+    <label>Culoare Fundal:</label>
+    <input type="color" id="cfg-bg" onchange="applyCfg()">
+    
+    <label>Font Lectură: <span id="val-f1">24</span>px</label>
+    <input type="range" id="cfg-f1" min="14" max="40" value="24" oninput="applyCfg()">
+    
+    <label>Viteză Voce:</label>
+    <input type="range" id="cfg-rate" min="0.4" max="1.6" step="0.1" value="1" onchange="applyCfg()">
+
+    <hr>
+    <h3>➕ Adaugă Material</h3>
+    <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
+    <select id="in-type"><option value="L">📄 Lectură</option><option value="T">🧠 Test</option></select>
+    <input type="text" id="in-title" placeholder="Titlu">
+    <textarea id="in-body" style="height:100px" placeholder="Conținut..."></textarea>
+    
+    <button class="lvl-btn active-lvl" style="width:100%; margin-top:10px;" onclick="saveData()">💾 SALVEAZĂ</button>
+
+    <hr>
+    <button class="lvl-btn" style="width:100%; background:#007bff" onclick="doExport()">📥 SALVEAZĂ BACKUP</button>
+    
     <div style="margin-top:15px;">
         <label>Restaurare Date (.json):</label>
         <input type="file" id="import-file" accept=".json" onchange="doImport(this)">
     </div>
+    
     <button class="lvl-btn" style="width:100%; background:#343a40; margin-top:20px" onclick="toggleSet()">ÎNCHIDE</button>
 </div>
 
 <script>
     let db = JSON.parse(localStorage.getItem('gm_db_v3') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
-    let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0;
+    let mistakes = JSON.parse(localStorage.getItem('gm_mistakes') || '[]');
+    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"24","rate":"1"}');
+    let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
 
-    window.onload = () => { if(localStorage.getItem('gm_session')) document.getElementById('resume-box').classList.remove('hidden'); };
+    window.onload = () => { 
+        loadCfg();
+        if(localStorage.getItem('gm_saved_session')) {
+            document.getElementById('resume-card').classList.remove('hidden');
+        }
+    };
+
+    function loadCfg() {
+        document.getElementById('cfg-bg').value = config.bg;
+        document.getElementById('cfg-f1').value = config.font;
+        document.getElementById('cfg-rate').value = config.rate;
+        applyCfg(false);
+    }
+
+    function applyCfg(save = true) {
+        config.bg = document.getElementById('cfg-bg').value;
+        config.font = document.getElementById('cfg-f1').value;
+        config.rate = document.getElementById('cfg-rate').value;
+        document.body.style.background = config.bg;
+        document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
+        document.getElementById('val-f1').innerText = config.font;
+        if(save) localStorage.setItem('gm_config', JSON.stringify(config));
+    }
 
     function openLvl(l) {
         curLvl = l;
@@ -115,8 +174,9 @@
         let container = document.getElementById('content-list');
         let items = db[curLvl].filter(i => i.type === curTab);
         container.innerHTML = items.map((item, idx) => `
-            <div style="padding:15px; background:#fff; border-radius:12px; margin-bottom:10px; border:1px solid #eee;">
-                <span onclick="startWork('${curLvl}', ${db[curLvl].indexOf(item)})" style="cursor:pointer; font-weight:bold;">${curTab==='L'?'📄':'🧠'} ${item.title}</span>
+            <div style="padding:15px; background:#fff; border-radius:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
+                <span onclick="startWork('${curLvl}', ${db[curLvl].indexOf(item)})" style="cursor:pointer; flex:1; font-weight:bold;">${curTab==='L'?'📄':'🧠'} ${item.title}</span>
+                <button onclick="delItem('${curLvl}', ${db[curLvl].indexOf(item)})" style="color:#ff4d4d; border:none; background:none; font-weight:bold; padding:10px;">X</button>
             </div>
         `).join('') || '<p style="text-align:center;">Gol.</p>';
     }
@@ -126,9 +186,11 @@
         document.getElementById('lvl-screen').classList.add('hidden');
         document.getElementById('work-screen').classList.remove('hidden');
         if(item.type === 'L') {
+            document.getElementById('audio-ui').classList.remove('hidden');
             document.getElementById('test-ui').classList.add('hidden');
             renderReading(item.body);
         } else {
+            document.getElementById('audio-ui').classList.add('hidden');
             document.getElementById('test-ui').classList.remove('hidden');
             initSmartTest(item.body);
         }
@@ -139,6 +201,8 @@
     }
 
     async function trans(el) {
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
+        el.classList.add('highlight-green');
         let w = el.innerText.replace(/[.,!?;:()]/g, '');
         document.getElementById('trans-box').innerText = "Traducere...";
         try {
@@ -149,77 +213,118 @@
     }
 
     function initSmartTest(raw) {
-        curSession = raw.split('\n').filter(l => l.includes('|')).map(line => {
+        let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
             return { q: p[0], cor: p[1], all: p.slice(1) };
         });
+        let size = parseInt(prompt("Câte întrebări?", "10")) || 10;
+        let misPool = mistakes.sort(() => 0.5 - Math.random()).slice(0, 2);
+        let fresh = pool.sort(() => 0.5 - Math.random()).slice(0, size - misPool.length);
+        curSession = [...misPool, ...fresh].sort(() => 0.5 - Math.random());
         curIdx = 0; score = 0; showQ();
     }
 
     function showQ() {
         if(curIdx >= curSession.length) { 
-            localStorage.removeItem('gm_session');
-            document.getElementById('reader-display').innerHTML = `<h2>Scor final: ${score}/${curSession.length}</h2>`;
+            localStorage.removeItem('gm_saved_session');
+            document.getElementById('reader-display').innerHTML = `<h2>Scor: ${score}/${curSession.length}</h2>`;
             document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="backToList()">CONTINUĂ</button>`;
             return; 
         }
         
-        // Salvare progres
-        localStorage.setItem('gm_session', JSON.stringify({lvl: curLvl, idx: curIdx, session: curSession, score: score}));
+        localStorage.setItem('gm_saved_session', JSON.stringify({
+            lvl: curLvl, idx: curIdx, session: curSession, score: score
+        }));
 
         let itm = curSession[curIdx];
-        let displayQ = itm.q.replace('___', '<span id="drop-zone" class="placeholder-box">...</span>');
-        document.getElementById('reader-display').innerHTML = `<h3>${displayQ}</h3>`;
+        let qTxt = itm.q.replace('___', '<span id="blank-spot" class="placeholder-box">...</span>');
+        document.getElementById('reader-display').innerHTML = `<h3 id="q-container">${qTxt}</h3>`;
         document.getElementById('reader-display').className = ""; 
         
-        let html = itm.all.sort(() => 0.5 - Math.random()).map(o => `
-            <div class="test-opt" data-ans="${o}" onclick="evalAns(this, '${o}', '${itm.cor.replace(/'/g, "\\'")}')">
-                ${o}
-            </div>
-        `).join('');
+        let html = itm.all.sort(() => 0.5 - Math.random()).map(o => {
+            return `<div class="test-opt" data-ans="${o}" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')"><div>${o}</div></div>`;
+        }).join('');
         document.getElementById('test-ui').innerHTML = html;
     }
 
     function evalAns(el, sel, cor) {
         const options = document.querySelectorAll('.test-opt');
         options.forEach(o => o.style.pointerEvents = 'none');
-        
-        let dropZone = document.getElementById('drop-zone');
-        dropZone.innerText = sel; // Pune răspunsul în spațiul liber
+        let itm = curSession[curIdx];
+        let blank = document.getElementById('blank-spot');
+        if(blank) blank.innerText = sel;
 
+        let container = document.getElementById('reader-display');
+        
         if(sel === cor) {
-            el.classList.add('ans-correct');
-            document.getElementById('reader-display').classList.add('glow-effect');
+            el.classList.add('ans-correct'); 
+            container.classList.add('glow-effect');
             score++;
+            mistakes = mistakes.filter(m => m.q !== itm.q);
         } else {
             el.classList.add('ans-wrong');
-            document.getElementById('reader-display').classList.add('shake-effect');
+            container.classList.add('shake-effect');
             options.forEach(o => { if(o.getAttribute('data-ans') === cor) o.classList.add('ans-correct'); });
+            if(!mistakes.some(m => m.q === itm.q)) mistakes.push(itm);
         }
-
+        localStorage.setItem('gm_mistakes', JSON.stringify(mistakes));
         setTimeout(() => { curIdx++; showQ(); }, 1800);
     }
 
-    function resumeTest() {
-        let data = JSON.parse(localStorage.getItem('gm_session'));
-        curLvl = data.lvl; curIdx = data.idx; curSession = data.session; score = data.score;
-        document.getElementById('home-screen').classList.add('hidden');
-        document.getElementById('resume-box').classList.add('hidden');
-        document.getElementById('work-screen').classList.remove('hidden');
-        document.getElementById('test-ui').classList.remove('hidden');
-        showQ();
+    function resumeProgress() {
+        let saved = JSON.parse(localStorage.getItem('gm_saved_session'));
+        if(saved) {
+            curLvl = saved.lvl; curIdx = saved.idx; curSession = saved.session; score = saved.score;
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('work-screen').classList.remove('hidden');
+            document.getElementById('test-ui').classList.remove('hidden');
+            showQ();
+        }
+    }
+
+    function playAll() { 
+        synth.cancel();
+        let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText);
+        ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut);
+    }
+
+    function playSelect() {
+        let textToRead = "";
+        if (window.getSelection) { textToRead = window.getSelection().toString(); }
+        if (!textToRead || textToRead.trim() === "") { alert("Selectează textul!"); return; }
+        synth.cancel();
+        let ut = new SpeechSynthesisUtterance(textToRead);
+        ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut);
+    }
+
+    function pauseAudio() { synth.pause(); }
+    function stopAudio() { synth.cancel(); }
+
+    function saveData() {
+        let l = document.getElementById('in-lvl').value, t = document.getElementById('in-type').value;
+        let title = document.getElementById('in-title').value, body = document.getElementById('in-body').value;
+        if(!title || !body) return alert("Gol!");
+        db[l].push({ title, body, type: t });
+        localStorage.setItem('gm_db_v3', JSON.stringify(db));
+        renderList();
     }
 
     function goHome() { 
         document.getElementById('lvl-screen').classList.add('hidden');
         document.getElementById('work-screen').classList.add('hidden');
         document.getElementById('home-screen').classList.remove('hidden');
-        if(localStorage.getItem('gm_session')) document.getElementById('resume-box').classList.remove('hidden');
+        document.getElementById('nav-title').innerText = "GERMANA MASTER";
+        if(localStorage.getItem('gm_saved_session')) document.getElementById('resume-card').classList.remove('hidden');
+        stopAudio();
     }
-    
-    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); }
+    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     
+    function doExport() {
+        let data = { db, mistakes, config };
+        let blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+        let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_germana.json"; a.click();
+    }
     function doImport(input) {
         let file = input.files[0]; if(!file) return;
         let r = new FileReader();
@@ -229,6 +334,7 @@
         };
         r.readAsText(file);
     }
+    function delItem(l, idx) { if(confirm("Ștergi?")) { db[l].splice(idx, 1); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); } }
 </script>
 </body>
 </html>
