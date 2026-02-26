@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert ULTIMATE - Versiune Finală</title>
+    <title>Germana Expert ULTIMATE</title>
     <style>
         :root { 
             --bg-app: #f0f2f5; --bg-card: #ffffff; 
@@ -25,33 +25,32 @@
         .card { background: var(--bg-card); margin: 12px; padding: 20px; border-radius: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
         .hidden { display: none !important; }
 
-        .audio-bar { position: sticky; top: 70px; background: white; z-index: 900; display: flex; justify-content: center; gap: 20px; padding: 10px; border-bottom: 2px solid #eee; margin: -20px -20px 20px -20px; border-radius: 18px 18px 0 0; }
-        .btn-circle { width: 45px; height: 45px; border-radius: 50%; border: none; background: #f8f9fa; cursor: pointer; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-        #reader-display { line-height: 1.8; font-size: var(--f-size-read); min-height: 150px; }
-        .word { cursor: pointer; padding: 0 3px; border-radius: 5px; display: inline-block; transition: 0.2s; position: relative; z-index: 10; }
+        #reader-display { line-height: 1.6; font-size: var(--f-size-read); min-height: 120px; margin-bottom: 10px; }
+        .word { cursor: pointer; padding: 0 2px; border-radius: 4px; display: inline-block; transition: 0.2s; position: relative; z-index: 10; }
+        .word:active { background: #e0e0e0; }
         .highlight-green { background: #d4edda !important; color: #155724 !important; font-weight: bold; border: 1px solid #c3e6cb; }
         
         #trans-box { min-height: 50px; background: #e9f7ef; color: #155724; font-weight: bold; font-size: var(--f-size-trans); text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green); }
 
-        /* TEST UI - Design actualizat conform pozelor tale */
-        .test-opt { display: flex; flex-direction: column; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; position: relative; }
+        /* TEST UI MICȘORAT CONFORM POZEI */
+        .test-opt { display: flex; flex-direction: column; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 8px 0; padding: 12px; cursor: pointer; font-size: 16px; position: relative; }
         .ans-correct { background: #d4edda !important; border-color: #28a745 !important; }
         .ans-wrong { background: #f8d7da !important; border-color: #dc3545 !important; }
 
-        .expl-box { margin-top: 10px; font-size: 15px; color: #333; border-top: 1px solid #ddd; padding-top: 10px; display: none; }
-        .blank-space { border-bottom: 3px solid #555; min-width: 60px; display: inline-block; text-align: center; font-weight: bold; padding: 0 5px; }
+        .expl-box { margin-top: 8px; font-size: 14px; color: #333; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 8px; display: none; line-height: 1.4; }
+        .expl-header { font-weight: bold; display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
 
-        /* Butoane Navigare Test */
-        .test-nav { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-nav { flex: 1; padding: 15px; border-radius: 25px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #a3bffa; color: #1e3a8a; }
+        .blank-space { border-bottom: 2px solid #555; min-width: 50px; display: inline-block; text-align: center; font-weight: bold; color: var(--main-green); }
 
-        /* SIDE PANEL - Mai mic cu 5% */
-        .side-panel { position: fixed; top: 0; right: 0; width: 88%; height: 100%; background: white; z-index: 2000; padding: 22px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; }
+        .footer-nav { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-nav { flex: 1; padding: 12px; border-radius: 20px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; background: #a3bffa; color: #1e3a8a; }
+
+        /* SETĂRI MICȘORATE CU 5% */
+        .side-panel { position: fixed; top: 0; right: 0; width: 85.5%; height: 100%; background: white; z-index: 2000; padding: 23px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; }
         .side-panel.open { transform: translateX(0); }
-        .side-panel h3 { margin-top: 5px; font-size: 19px; }
-        .side-panel label { display: block; margin-top: 12px; font-weight: bold; color: #333; font-size: 15px; }
-        .side-panel input, .side-panel select, .side-panel textarea { width: 100%; padding: 10px; margin-top: 4px; border-radius: 9px; border: 1px solid #ddd; font-size: 15px; }
+        .side-panel h3 { margin-top: 0; font-size: 19px; }
+        .side-panel label { display: block; margin-top: 14px; font-weight: bold; font-size: 14px; }
+        .side-panel input, .side-panel select, .side-panel textarea { width: 100%; padding: 11px; margin-top: 5px; border-radius: 9px; border: 1px solid #ddd; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -59,16 +58,13 @@
 <div id="top-bar">
     <div class="nav-btns">
         <button class="nav-icon" onclick="goHome()">🏠</button>
-        <button class="nav-icon" id="test-progress">0/0</button>
+        <button class="nav-icon" id="score-text">0/0</button>
     </div>
     <span id="nav-title">GERMANA MASTER</span>
     <button onclick="toggleSet()" style="background:none; border:none; color:white; font-size:28px;">⚙️</button>
 </div>
 
 <div id="home-screen">
-    <div id="resume-container" style="padding: 0 15px;" class="hidden">
-        <button class="lvl-btn" style="width:100%; background:#6c757d; margin-bottom: 15px;" onclick="resumeTest()">🔄 REIA DE UNDE AI RĂMAS</button>
-    </div>
     <div class="grid-levels">
         <button class="lvl-btn" onclick="openLvl('A1')">A1</button>
         <button class="lvl-btn" onclick="openLvl('A2')">A2</button>
@@ -81,205 +77,111 @@
 
 <div id="lvl-screen" class="card hidden">
     <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <button class="lvl-btn active-lvl" style="flex:2" onclick="switchTab('L')">Lecturi</button>
-        <button class="lvl-btn active-lvl" style="flex:2" onclick="switchTab('T')">Teste</button>
+        <button class="lvl-btn active-lvl" style="flex:1" onclick="switchTab('L')">Lecturi</button>
+        <button class="lvl-btn active-lvl" style="flex:1" onclick="switchTab('T')">Teste</button>
     </div>
     <div id="content-list"></div>
 </div>
 
 <div id="work-screen" class="card hidden">
-    <div id="audio-ui" class="audio-bar hidden">
-        <button class="btn-circle" onclick="playAll()">▶️</button>
-        <button class="btn-circle" onclick="playSelect()">🎯</button>
-        <button class="btn-circle" onclick="pauseAudio()">⏸️</button>
-        <button class="btn-circle" onclick="stopAudio()">⏹️</button>
-    </div>
     <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
     <div id="reader-display"></div>
-    <div id="test-ui" class="hidden" style="margin-top:10px;"></div>
+    <div id="test-ui"></div>
     
-    <div id="nav-footer" class="test-nav hidden">
-        <button class="btn-nav" style="background:#6c757d; color:white;" onclick="prevQ()">Înapoi</button>
+    <div class="footer-nav" id="test-nav">
+        <button class="btn-nav" style="background:#444; color:white" onclick="prevQ()">Înapoi</button>
         <button class="btn-nav" onclick="nextQ()">Înainte</button>
     </div>
-
-    <button id="btn-list-back" class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
+    
+    <button class="lvl-btn" style="width:100%; margin-top:20px; background:#6c757d" onclick="backToList()">⬅️ Lista</button>
 </div>
 
 <div id="set-panel" class="side-panel">
-    <h3>⚙️ Setări & Backup</h3>
-    
+    <h3>⚙️ Setări</h3>
     <label>Culoare Fundal:</label>
-    <input type="color" id="cfg-bg" onchange="applyCfg()">
-    
-    <label>Font Lectură: <span id="val-f1">24</span>px</label>
-    <input type="range" id="cfg-f1" min="14" max="40" value="24" oninput="applyCfg()">
-    
-    <label>Viteză Voce:</label>
-    <input type="range" id="cfg-rate" min="0.4" max="1.6" step="0.1" value="1" onchange="applyCfg()">
+    <input type="color" id="cfg-bg" value="#f0f2f5" onchange="applyCfg()">
+    <label>Mărime Font Lectură: <span id="val-f1">24</span>px</label>
+    <input type="range" id="cfg-f1" min="16" max="35" value="24" oninput="applyCfg()">
 
     <hr>
-    <h3>➕ Adaugă Material</h3>
-    <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
-    <select id="in-type"><option value="L">📄 Lectură</option><option value="T">🧠 Test</option></select>
-    <input type="text" id="in-title" placeholder="Titlu">
-    <textarea id="in-body" style="height:100px" placeholder="Conținut..."></textarea>
-    
+    <h3>➕ Adaugă Test</h3>
+    <p style="font-size:11px; color:gray;">Format: Întrebare cu ___ | Corect | Explicație | Greșit | Explicație</p>
+    <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select>
+    <input type="text" id="in-title" placeholder="Titlu Test">
+    <textarea id="in-body" style="height:120px" placeholder="Wir ___ | sind | Suntem la plural | bin | 'bin' e doar pt 'ich'"></textarea>
     <button class="lvl-btn active-lvl" style="width:100%; margin-top:10px;" onclick="saveData()">💾 SALVEAZĂ</button>
-
-    <hr>
-    <button class="lvl-btn" style="width:100%; background:#007bff" onclick="doExport()">📥 SALVEAZĂ BACKUP</button>
-    
-    <div style="margin-top:10px;">
-        <label>Restaurare Date (.json):</label>
-        <input type="file" id="import-file" accept=".json" onchange="doImport(this)">
-    </div>
-    
-    <button class="lvl-btn" style="width:100%; background:#343a40; margin-top:20px" onclick="toggleSet()">ÎNCHIDE</button>
+    <button class="lvl-btn" style="width:100%; background:#343a40; margin-top:15px" onclick="toggleSet()">ÎNCHIDE</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('gm_db_v3') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
-    let mistakes = JSON.parse(localStorage.getItem('gm_mistakes') || '[]');
-    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"24","rate":"1"}');
-    let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
-    let lastRawBody = '', lastSetSize = 10;
+    let db = JSON.parse(localStorage.getItem('gm_db_v10') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
+    let curLvl = '', curTab = 'L', curSession = [], curIdx = 0;
 
-    window.onload = () => { loadCfg(); checkResume(); };
-
-    function checkResume() {
-        if(localStorage.getItem('gm_last_test')) document.getElementById('resume-container').classList.remove('hidden');
-        else document.getElementById('resume-container').classList.add('hidden');
-    }
-
-    function loadCfg() {
-        document.getElementById('cfg-bg').value = config.bg;
-        document.getElementById('cfg-f1').value = config.font;
-        document.getElementById('cfg-rate').value = config.rate;
-        applyCfg(false);
-    }
-
-    function applyCfg(save = true) {
-        config.bg = document.getElementById('cfg-bg').value;
-        config.font = document.getElementById('cfg-f1').value;
-        config.rate = document.getElementById('cfg-rate').value;
-        document.body.style.background = config.bg;
-        document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
-        document.getElementById('val-f1').innerText = config.font;
-        if(save) localStorage.setItem('gm_config', JSON.stringify(config));
-    }
-
-    function openLvl(l) {
-        curLvl = l;
-        document.getElementById('home-screen').classList.add('hidden');
-        document.getElementById('lvl-screen').classList.remove('hidden');
-        document.getElementById('nav-title').innerText = "Nivel " + l;
-        switchTab('L');
-    }
-
+    function openLvl(l) { curLvl = l; document.getElementById('home-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); switchTab('L'); }
     function switchTab(t) { curTab = t; renderList(); }
 
     function renderList() {
-        let container = document.getElementById('content-list');
         let items = db[curLvl].filter(i => i.type === curTab);
-        container.innerHTML = items.map((item) => `
-            <div style="padding:15px; background:#fff; border-radius:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
-                <span onclick="startWork('${curLvl}', ${db[curLvl].indexOf(item)})" style="cursor:pointer; flex:1; font-weight:bold;">${curTab==='L'?'📄':'🧠'} ${item.title}</span>
-                <button onclick="delItem('${curLvl}', ${db[curLvl].indexOf(item)})" style="color:#ff4d4d; border:none; background:none; font-weight:bold; padding:10px;">X</button>
+        document.getElementById('content-list').innerHTML = items.map((item, idx) => `
+            <div style="padding:12px; background:#fff; border-radius:10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
+                <span onclick="startWork(${db[curLvl].indexOf(item)})" style="cursor:pointer; flex:1; font-weight:bold;">${item.title}</span>
+                <button onclick="delItem(${db[curLvl].indexOf(item)})" style="color:red; border:none; background:none; font-size:18px;">×</button>
             </div>
-        `).join('') || '<p style="text-align:center;">Gol.</p>';
+        `).join('') || '<p>Niciun material adăugat.</p>';
     }
 
-    function startWork(l, idx) {
-        let item = db[l][idx];
+    function startWork(idx) {
+        let item = db[curLvl][idx];
         document.getElementById('lvl-screen').classList.add('hidden');
         document.getElementById('work-screen').classList.remove('hidden');
         if(item.type === 'L') {
-            document.getElementById('audio-ui').classList.remove('hidden');
-            document.getElementById('test-ui').classList.add('hidden');
-            document.getElementById('nav-footer').classList.add('hidden');
-            renderReading(item.body);
+            document.getElementById('test-nav').classList.add('hidden');
+            document.getElementById('reader-display').innerHTML = item.body.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
+            document.getElementById('test-ui').innerHTML = '';
         } else {
-            document.getElementById('audio-ui').classList.add('hidden');
-            document.getElementById('test-ui').classList.remove('hidden');
-            document.getElementById('nav-footer').classList.remove('hidden');
-            lastRawBody = item.body;
-            askSize();
+            document.getElementById('test-nav').classList.remove('hidden');
+            parseTest(item.body);
+            showQ();
         }
     }
 
-    function askSize() {
-        document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3>`;
-        document.getElementById('test-ui').innerHTML = `
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 5)">5</button>
-                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 10)">10</button>
-                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 15)">15</button>
-                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 20)">20</button>
-            </div>`;
-        document.getElementById('nav-footer').classList.add('hidden');
-    }
-
-    function renderReading(txt) {
-        document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
-    }
-
-    function initSmartTest(raw, size) {
-        lastSetSize = size;
-        let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
+    function parseTest(raw) {
+        curSession = raw.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
-            // Format: Intrebare | Corect | Expl Corect | G1 | Expl G1 | G2 | Expl G2...
-            return { 
-                q: p[0], 
-                cor: { txt: p[1], expl: p[2] || "Bravo!" },
-                all: [] 
-            };
-        });
-
-        // Reconstruim all options din raw pentru varietate, sau poti folosi formatul fix
-        pool.forEach((itm, idx) => {
-            let lineParts = raw.split('\n').filter(l => l.includes('|'))[idx].split('|').map(x => x.trim());
-            let options = [];
-            for(let i=1; i < lineParts.length; i+=2) {
-                options.push({ txt: lineParts[i], expl: lineParts[i+1] || "", isCor: i===1 });
+            let opts = [];
+            for(let i=1; i<p.length; i+=2) {
+                opts.push({ txt: p[i], expl: p[i+1] || "", isCor: i===1 });
             }
-            itm.all = options;
+            return { q: p[0], opts: opts };
         });
-
-        curSession = pool.sort(() => 0.5 - Math.random()).slice(0, size);
-        curIdx = 0; score = 0; 
-        document.getElementById('nav-footer').classList.remove('hidden');
-        showQ();
+        curIdx = 0;
     }
 
     function showQ() {
-        if(curIdx >= curSession.length) { 
-            localStorage.removeItem('gm_last_test');
-            document.getElementById('reader-display').innerHTML = `<h2>Scor: ${score}/${curSession.length}</h2>`;
-            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="initSmartTest(lastRawBody, lastSetSize)">RESTARTEAZĂ</button>`;
-            document.getElementById('nav-footer').classList.add('hidden');
-            return; 
-        }
-        
-        document.getElementById('test-progress').innerText = `${curIdx + 1}/${curSession.length}`;
         let itm = curSession[curIdx];
+        document.getElementById('score-text').innerText = `${curIdx + 1}/${curSession.length}`;
         
-        let qHtml = itm.q.split(/\s+/).map(w => w === '___' ? '<span id="slot" class="blank-space">___</span>' : `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
+        let qHtml = itm.q.split(' ').map(w => 
+            w.includes('___') ? `<span id="slot" class="blank-space">___</span>` : `<span class="word" onclick="trans(this)">${w}</span>`
+        ).join(' ');
         document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
 
-        let html = [...itm.all].sort(() => 0.5 - Math.random()).map((o, i) => `
-            <div class="test-opt" id="opt-${i}" onclick="evalAns(${i}, ${o.isCor}, '${o.txt.replace(/'/g, "\\'")}', '${o.expl.replace(/'/g, "\\'")}')">
+        let html = [...itm.opts].sort(() => 0.5 - Math.random()).map((o, i) => `
+            <div class="test-opt" id="opt-${i}" onclick="evalAns(${i}, ${o.isCor}, '${o.txt.replace(/'/g, "\\'")}')">
                 <div style="display:flex; gap:10px">
                     <b>${String.fromCharCode(65+i)}.</b>
-                    <div>${o.txt}</div>
+                    <div class="opt-text">${o.txt.split(' ').map(ow => `<span class="word" onclick="trans(this)">${ow}</span>`).join(' ')}</div>
                 </div>
-                <div class="expl-box" id="expl-${i}"><b>${o.isCor?'✔':'✖'}</b> ${o.expl}</div>
+                <div class="expl-box" id="expl-${i}">
+                    <div class="expl-header">${o.isCor ? '✅ Răspuns corect' : '❌ Nu chiar'}</div>
+                    ${o.expl}
+                </div>
             </div>
         `).join('');
         document.getElementById('test-ui').innerHTML = html;
     }
 
-    function evalAns(idx, isCor, txt, expl) {
+    function evalAns(idx, isCor, txt) {
         if(event.target.classList.contains('word')) return;
         
         document.querySelectorAll('.test-opt').forEach(el => {
@@ -288,41 +190,46 @@
         });
 
         let slot = document.getElementById('slot');
-        if(slot) {
-            slot.innerText = txt;
-            slot.style.color = isCor ? "#28a745" : "#dc3545";
-        }
+        if(slot) { slot.innerText = txt; slot.style.color = isCor ? "#28a745" : "#dc3545"; }
 
         let optEl = document.getElementById(`opt-${idx}`);
         optEl.classList.add(isCor ? 'ans-correct' : 'ans-wrong');
         document.getElementById(`expl-${idx}`).style.display = 'block';
-        
-        if(isCor) score++;
     }
 
-    function nextQ() { if(curIdx < curSession.length - 1) { curIdx++; showQ(); } else { showQ(); curIdx++; } }
+    function nextQ() { if(curIdx < curSession.length - 1) { curIdx++; showQ(); } }
     function prevQ() { if(curIdx > 0) { curIdx--; showQ(); } }
 
     async function trans(el) {
         event.stopPropagation();
         document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
         el.classList.add('highlight-green');
-        let w = el.innerText.replace(/[.,!?;:()]/g, '');
+        let w = el.innerText.replace(/[.,!?;:]/g, '');
         document.getElementById('trans-box').innerText = "Traducere...";
         try {
-            let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${encodeURIComponent(w)}`);
+            let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${w}`);
             let data = await res.json();
             document.getElementById('trans-box').innerText = data[0][0][0];
         } catch(e) { document.getElementById('trans-box').innerText = "Eroare"; }
     }
 
-    function goHome() { document.getElementById('lvl-screen').classList.add('hidden'); document.getElementById('work-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); document.getElementById('nav-title').innerText = "GERMANA MASTER"; stopAudio(); }
-    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
+    function applyCfg() {
+        document.body.style.background = document.getElementById('cfg-bg').value;
+        document.documentElement.style.setProperty('--f-size-read', document.getElementById('cfg-f1').value + 'px');
+        document.getElementById('val-f1').innerText = document.getElementById('cfg-f1').value;
+    }
+
+    function saveData() {
+        let l = document.getElementById('in-lvl').value, t = 'T', title = document.getElementById('in-title').value, body = document.getElementById('in-body').value;
+        if(!title || !body) return;
+        db[l].push({ title, body, type: t });
+        localStorage.setItem('gm_db_v10', JSON.stringify(db));
+        toggleSet(); renderList();
+    }
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
-    function saveData() { let l = document.getElementById('in-lvl').value, t = document.getElementById('in-type').value, title = document.getElementById('in-title').value, body = document.getElementById('in-body').value; if(!title || !body) return; db[l].push({ title, body, type: t }); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); }
-    function doExport() { let blob = new Blob([JSON.stringify({db, mistakes, config})], {type:"application/json"}); let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_germana.json"; a.click(); }
-    function doImport(input) { let file = input.files[0]; if(!file) return; let r = new FileReader(); r.onload = (e) => { let d = JSON.parse(e.target.result); if(d.db) { db=d.db; localStorage.setItem('gm_db_v3', JSON.stringify(db)); location.reload(); } }; r.readAsText(file); }
-    function delItem(l, idx) { if(confirm("Ștergi?")) { db[l].splice(idx, 1); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); } }
+    function goHome() { document.getElementById('lvl-screen').classList.add('hidden'); document.getElementById('work-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); }
+    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); }
+    function delItem(idx) { if(confirm("Ștergi?")) { db[curLvl].splice(idx, 1); localStorage.setItem('gm_db_v10', JSON.stringify(db)); renderList(); } }
 </script>
 </body>
 </html>
