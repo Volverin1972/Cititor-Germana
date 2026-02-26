@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Master - Versiune Restaurată</title>
+    <title>Germana Expert - Versiunea Ta Originală</title>
     <style>
         :root { 
             --bg-app: #f0f2f5; --bg-card: #ffffff; 
@@ -25,13 +25,13 @@
         .card { background: var(--bg-card); margin: 12px; padding: 20px; border-radius: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
         .hidden { display: none !important; }
 
-        #reader-display { line-height: 1.8; font-size: var(--f-size-read); min-height: 150px; }
-        .word { cursor: pointer; padding: 0 3px; border-radius: 5px; display: inline-block; transition: 0.2s; position: relative; z-index: 10; }
-        .highlight-green { background: #d4edda !important; color: #155724 !important; font-weight: bold; border: 1px solid #c3e6cb; }
+        #reader-display { line-height: 1.8; font-size: var(--f-size-read); min-height: 100px; }
+        .word { cursor: pointer; padding: 0 3px; border-radius: 5px; display: inline-block; transition: 0.2s; }
+        .highlight-green { background: #d4edda !important; color: #155724 !important; font-weight: bold; }
         
         #trans-box { min-height: 50px; background: #e9f7ef; color: #155724; font-weight: bold; font-size: var(--f-size-trans); text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green); }
 
-        .test-opt { display: flex; flex-direction: column; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; position: relative; }
+        .test-opt { display: flex; flex-direction: column; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; }
         .ans-correct { border-color: #28a745 !important; background: #d4edda !important; }
         .ans-wrong { border-color: #dc3545 !important; background: #f8d7da !important; }
 
@@ -39,14 +39,14 @@
         .blank-space { border-bottom: 3px solid #555; min-width: 60px; display: inline-block; text-align: center; font-weight: bold; padding: 0 5px; }
 
         .footer-nav { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-nav { flex: 1; padding: 15px; border-radius: 25px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #a3bffa; color: #1e3a8a; }
+        .btn-nav { flex: 1; padding: 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #007bff; color: white; }
 
-        /* Setări Ajustate (+50% față de varianta mică) */
-        .side-panel { position: fixed; top: 0; right: 0; width: 85%; height: 100%; background: white; z-index: 2000; padding: 20px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; color: #333; }
+        /* SETĂRI: Formatul tău original, ușor mai compact */
+        .side-panel { position: fixed; top: 0; right: 0; width: 85%; height: 100%; background: white; z-index: 2000; padding: 25px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; color: #333; }
         .side-panel.open { transform: translateX(0); }
-        .side-panel h3 { margin: 15px 0 10px 0; font-size: 20px; }
-        .side-panel label { display: block; margin-top: 12px; font-weight: bold; font-size: 15px; }
-        .side-panel input, .side-panel select, .side-panel textarea { width: 100%; padding: 10px; margin-top: 6px; border-radius: 10px; border: 1px solid #ddd; font-size: 15px; }
+        .side-panel h3 { margin-top: 0; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -54,7 +54,7 @@
 <div id="top-bar">
     <div class="nav-btns">
         <button class="nav-icon" onclick="goHome()">🏠</button>
-        <button class="nav-icon" id="score-text">0/0</button>
+        <button class="nav-icon" id="score-info">0/0</button>
     </div>
     <span id="nav-title">GERMANA MASTER</span>
     <button onclick="toggleSet()" style="background:none; border:none; color:white; font-size:28px;">⚙️</button>
@@ -74,7 +74,7 @@
     <div id="reader-display"></div>
     <div id="test-ui"></div>
     <div class="footer-nav">
-        <button class="btn-nav" style="background:#6c757d; color:white;" onclick="prevQ()">Înapoi</button>
+        <button class="btn-nav" style="background:#6c757d;" onclick="prevQ()">Înapoi</button>
         <button class="btn-nav" onclick="nextQ()">Înainte</button>
     </div>
 </div>
@@ -82,26 +82,25 @@
 <div id="set-panel" class="side-panel">
     <h3>⚙️ Setări</h3>
     <label>Culoare Fundal:</label>
-    <input type="color" id="cfg-bg" onchange="applyCfg()">
+    <input type="color" id="cfg-bg" value="#f0f2f5" onchange="applyCfg()">
+    
     <label>Mărime Font: <span id="val-f1">24</span>px</label>
     <input type="range" id="cfg-f1" min="16" max="35" value="24" oninput="applyCfg()">
     
     <hr>
     <h3>➕ Adaugă Test</h3>
     <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select>
-    <input type="text" id="in-title" placeholder="Titlu Test">
-    <textarea id="in-body" style="height:120px" placeholder="Întrebare cu ___ | Corect | Explicație | Greșit1 | Explicație..."></textarea>
-    <button class="lvl-btn active-lvl" style="width:100%; margin-top:15px;" onclick="saveData()">💾 SALVEAZĂ</button>
+    <textarea id="in-body" style="height:150px" placeholder="Întrebare ___ | Corect | Explicație | Greșit1 | Explicație..."></textarea>
+    <button class="lvl-btn active-lvl" style="width:100%; margin-top:10px;" onclick="saveData()">SALVEAZĂ</button>
     
     <button class="lvl-btn" style="width:100%; background:#343a40; margin-top:20px" onclick="toggleSet()">ÎNCHIDE</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('gm_db_v5') || '{"A1":[],"A2":[],"B1":[],"B2":[]}');
-    let curSession = [], curIdx = 0, curLvl = '';
+    let db = JSON.parse(localStorage.getItem('gm_db_v6') || '{"A1":[],"A2":[],"B1":[],"B2":[]}');
+    let curSession = [], curIdx = 0;
 
     function startTest(l) {
-        curLvl = l;
         if(db[l].length === 0) { alert("Adaugă teste în setări!"); return; }
         curSession = [...db[l]].sort(() => 0.5 - Math.random()).slice(0, 10);
         curIdx = 0;
@@ -112,20 +111,20 @@
 
     function showQ() {
         let itm = curSession[curIdx];
-        document.getElementById('score-text').innerText = `${curIdx + 1}/${curSession.length}`;
+        document.getElementById('score-info').innerText = `${curIdx + 1}/${curSession.length}`;
         
-        // Randare întrebare cu ___
+        // Randare întrebare
         let qHtml = itm.q.split(' ').map(w => 
             w.includes('___') ? `<span id="slot" class="blank-space">___</span>` : `<span class="word" onclick="trans(this)">${w}</span>`
         ).join(' ');
         document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
 
-        // Randare opțiuni (Amestecate)
+        // Randare opțiuni
         let html = itm.opts.sort(() => 0.5 - Math.random()).map((o, i) => `
             <div class="test-opt" id="opt-${i}" onclick="selectAns(${i}, ${o.isCor}, '${o.txt}', '${o.expl.replace(/'/g, "\\'")}')">
                 <div style="display:flex; gap:10px">
                     <b>${String.fromCharCode(65+i)}.</b>
-                    <div class="word-container">${o.txt.split(' ').map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ')}</div>
+                    <div>${o.txt.split(' ').map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ')}</div>
                 </div>
                 <div class="expl-box" id="expl-${i}"><b>${o.isCor?'✔':'✖'}</b> ${o.expl}</div>
             </div>
@@ -135,18 +134,14 @@
 
     function selectAns(idx, isCor, txt, expl) {
         if(event.target.classList.contains('word')) return;
-        
         document.querySelectorAll('.test-opt').forEach(el => {
             el.classList.remove('ans-correct', 'ans-wrong');
             el.querySelector('.expl-box').style.display = 'none';
         });
-
-        let optEl = document.getElementById(`opt-${idx}`);
         let slot = document.getElementById('slot');
-        
         slot.innerText = txt;
         slot.style.color = isCor ? "#28a745" : "#dc3545";
-        optEl.classList.add(isCor ? 'ans-correct' : 'ans-wrong');
+        document.getElementById(`opt-${idx}`).classList.add(isCor ? 'ans-correct' : 'ans-wrong');
         document.getElementById(`expl-${idx}`).style.display = 'block';
     }
 
@@ -155,6 +150,8 @@
 
     async function trans(el) {
         event.stopPropagation();
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
+        el.classList.add('highlight-green');
         let w = el.innerText.replace(/[.,!?;:]/g, '');
         document.getElementById('trans-box').innerText = "Traducere...";
         try {
@@ -189,7 +186,7 @@
                 {txt: p[5], expl: p[6], isCor: false}
             ]
         });
-        localStorage.setItem('gm_db_v5', JSON.stringify(db));
+        localStorage.setItem('gm_db_v6', JSON.stringify(db));
         alert("Salvat!");
     }
 </script>
