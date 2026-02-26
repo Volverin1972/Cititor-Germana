@@ -28,33 +28,38 @@
         .audio-bar { position: sticky; top: 70px; background: white; z-index: 900; display: flex; justify-content: center; gap: 20px; padding: 10px; border-bottom: 2px solid #eee; margin: -20px -20px 20px -20px; border-radius: 18px 18px 0 0; }
         .btn-circle { width: 45px; height: 45px; border-radius: 50%; border: none; background: #f8f9fa; cursor: pointer; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
-        #reader-display { line-height: 1.8; font-size: var(--f-size-read); min-height: 250px; }
+        #reader-display { line-height: 1.8; font-size: var(--f-size-read); min-height: 150px; }
         .word { cursor: pointer; padding: 0 3px; border-radius: 5px; display: inline-block; transition: 0.2s; position: relative; z-index: 10; }
         .highlight-green { background: #d4edda !important; color: #155724 !important; font-weight: bold; border: 1px solid #c3e6cb; }
         
         #trans-box { min-height: 50px; background: #e9f7ef; color: #155724; font-weight: bold; font-size: var(--f-size-trans); text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green); }
 
-        .test-opt { display: flex; align-items: center; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; position: relative; }
-        .ans-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; }
-        .ans-wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; }
+        /* TEST UI - Design actualizat conform pozelor tale */
+        .test-opt { display: flex; flex-direction: column; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; position: relative; }
+        .ans-correct { background: #d4edda !important; border-color: #28a745 !important; }
+        .ans-wrong { background: #f8d7da !important; border-color: #dc3545 !important; }
 
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
-        .shake-ui { animation: shake 0.4s; background: #f8d7da !important; }
-        .glow-ui { background: #d4edda !important; box-shadow: 0 0 20px var(--main-green); }
-        .blank-space { border-bottom: 3px solid #555; min-width: 60px; display: inline-block; text-align: center; color: var(--main-green); font-weight: bold; padding: 0 5px; }
+        .expl-box { margin-top: 10px; font-size: 15px; color: #333; border-top: 1px solid #ddd; padding-top: 10px; display: none; }
+        .blank-space { border-bottom: 3px solid #555; min-width: 60px; display: inline-block; text-align: center; font-weight: bold; padding: 0 5px; }
 
-        .side-panel { position: fixed; top: 0; right: 0; width: 90%; height: 100%; background: white; z-index: 2000; padding: 25px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; }
+        /* Butoane Navigare Test */
+        .test-nav { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-nav { flex: 1; padding: 15px; border-radius: 25px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #a3bffa; color: #1e3a8a; }
+
+        /* SIDE PANEL - Mai mic cu 5% */
+        .side-panel { position: fixed; top: 0; right: 0; width: 88%; height: 100%; background: white; z-index: 2000; padding: 22px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; }
         .side-panel.open { transform: translateX(0); }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; }
+        .side-panel h3 { margin-top: 5px; font-size: 19px; }
+        .side-panel label { display: block; margin-top: 12px; font-weight: bold; color: #333; font-size: 15px; }
+        .side-panel input, .side-panel select, .side-panel textarea { width: 100%; padding: 10px; margin-top: 4px; border-radius: 9px; border: 1px solid #ddd; font-size: 15px; }
     </style>
 </head>
 <body>
 
 <div id="top-bar">
     <div class="nav-btns">
-        <button class="nav-icon" onclick="goHome()">⬅️</button>
-        <button class="nav-icon" onclick="history.forward()">➡️</button>
+        <button class="nav-icon" onclick="goHome()">🏠</button>
+        <button class="nav-icon" id="test-progress">0/0</button>
     </div>
     <span id="nav-title">GERMANA MASTER</span>
     <button onclick="toggleSet()" style="background:none; border:none; color:white; font-size:28px;">⚙️</button>
@@ -91,8 +96,14 @@
     </div>
     <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
     <div id="reader-display"></div>
-    <div id="test-ui" class="hidden" style="margin-top:20px;"></div>
-    <button class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
+    <div id="test-ui" class="hidden" style="margin-top:10px;"></div>
+    
+    <div id="nav-footer" class="test-nav hidden">
+        <button class="btn-nav" style="background:#6c757d; color:white;" onclick="prevQ()">Înapoi</button>
+        <button class="btn-nav" onclick="nextQ()">Înainte</button>
+    </div>
+
+    <button id="btn-list-back" class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
 </div>
 
 <div id="set-panel" class="side-panel">
@@ -119,7 +130,7 @@
     <hr>
     <button class="lvl-btn" style="width:100%; background:#007bff" onclick="doExport()">📥 SALVEAZĂ BACKUP</button>
     
-    <div style="margin-top:15px;">
+    <div style="margin-top:10px;">
         <label>Restaurare Date (.json):</label>
         <input type="file" id="import-file" accept=".json" onchange="doImport(this)">
     </div>
@@ -186,10 +197,12 @@
         if(item.type === 'L') {
             document.getElementById('audio-ui').classList.remove('hidden');
             document.getElementById('test-ui').classList.add('hidden');
+            document.getElementById('nav-footer').classList.add('hidden');
             renderReading(item.body);
         } else {
             document.getElementById('audio-ui').classList.add('hidden');
             document.getElementById('test-ui').classList.remove('hidden');
+            document.getElementById('nav-footer').classList.remove('hidden');
             lastRawBody = item.body;
             askSize();
         }
@@ -204,11 +217,91 @@
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 15)">15</button>
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 20)">20</button>
             </div>`;
+        document.getElementById('nav-footer').classList.add('hidden');
     }
 
     function renderReading(txt) {
         document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
     }
+
+    function initSmartTest(raw, size) {
+        lastSetSize = size;
+        let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
+            let p = line.split('|').map(x => x.trim());
+            // Format: Intrebare | Corect | Expl Corect | G1 | Expl G1 | G2 | Expl G2...
+            return { 
+                q: p[0], 
+                cor: { txt: p[1], expl: p[2] || "Bravo!" },
+                all: [] 
+            };
+        });
+
+        // Reconstruim all options din raw pentru varietate, sau poti folosi formatul fix
+        pool.forEach((itm, idx) => {
+            let lineParts = raw.split('\n').filter(l => l.includes('|'))[idx].split('|').map(x => x.trim());
+            let options = [];
+            for(let i=1; i < lineParts.length; i+=2) {
+                options.push({ txt: lineParts[i], expl: lineParts[i+1] || "", isCor: i===1 });
+            }
+            itm.all = options;
+        });
+
+        curSession = pool.sort(() => 0.5 - Math.random()).slice(0, size);
+        curIdx = 0; score = 0; 
+        document.getElementById('nav-footer').classList.remove('hidden');
+        showQ();
+    }
+
+    function showQ() {
+        if(curIdx >= curSession.length) { 
+            localStorage.removeItem('gm_last_test');
+            document.getElementById('reader-display').innerHTML = `<h2>Scor: ${score}/${curSession.length}</h2>`;
+            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="initSmartTest(lastRawBody, lastSetSize)">RESTARTEAZĂ</button>`;
+            document.getElementById('nav-footer').classList.add('hidden');
+            return; 
+        }
+        
+        document.getElementById('test-progress').innerText = `${curIdx + 1}/${curSession.length}`;
+        let itm = curSession[curIdx];
+        
+        let qHtml = itm.q.split(/\s+/).map(w => w === '___' ? '<span id="slot" class="blank-space">___</span>' : `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
+        document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
+
+        let html = [...itm.all].sort(() => 0.5 - Math.random()).map((o, i) => `
+            <div class="test-opt" id="opt-${i}" onclick="evalAns(${i}, ${o.isCor}, '${o.txt.replace(/'/g, "\\'")}', '${o.expl.replace(/'/g, "\\'")}')">
+                <div style="display:flex; gap:10px">
+                    <b>${String.fromCharCode(65+i)}.</b>
+                    <div>${o.txt}</div>
+                </div>
+                <div class="expl-box" id="expl-${i}"><b>${o.isCor?'✔':'✖'}</b> ${o.expl}</div>
+            </div>
+        `).join('');
+        document.getElementById('test-ui').innerHTML = html;
+    }
+
+    function evalAns(idx, isCor, txt, expl) {
+        if(event.target.classList.contains('word')) return;
+        
+        document.querySelectorAll('.test-opt').forEach(el => {
+            el.classList.remove('ans-correct', 'ans-wrong');
+            el.querySelector('.expl-box').style.display = 'none';
+        });
+
+        let slot = document.getElementById('slot');
+        if(slot) {
+            slot.innerText = txt;
+            slot.style.color = isCor ? "#28a745" : "#dc3545";
+        }
+
+        let optEl = document.getElementById(`opt-${idx}`);
+        optEl.classList.add(isCor ? 'ans-correct' : 'ans-wrong');
+        document.getElementById(`expl-${idx}`).style.display = 'block';
+        
+        if(isCor) score++;
+    }
+
+    function nextQ() { if(curIdx < curSession.length - 1) { curIdx++; showQ(); } else { showQ(); curIdx++; } }
+    function prevQ() { if(curIdx > 0) { curIdx--; showQ(); } }
 
     async function trans(el) {
         event.stopPropagation();
@@ -223,79 +316,7 @@
         } catch(e) { document.getElementById('trans-box').innerText = "Eroare"; }
     }
 
-    function initSmartTest(raw, size) {
-        lastSetSize = size;
-        let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
-            let p = line.split('|').map(x => x.trim());
-            return { q: p[0], cor: p[1], all: p.slice(1) };
-        });
-        let misPool = mistakes.sort(() => 0.5 - Math.random()).slice(0, 2);
-        let fresh = pool.sort(() => 0.5 - Math.random()).slice(0, size - misPool.length);
-        curSession = [...misPool, ...fresh].sort(() => 0.5 - Math.random());
-        curIdx = 0; score = 0; showQ();
-    }
-
-    function showQ() {
-        if(curIdx >= curSession.length) { 
-            localStorage.removeItem('gm_last_test');
-            document.getElementById('reader-display').innerHTML = `<h2>Scor: ${score}/${curSession.length}</h2>`;
-            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="initSmartTest(lastRawBody, lastSetSize)">CONTINUĂ</button>`;
-            return; 
-        }
-        
-        localStorage.setItem('gm_last_test', JSON.stringify({ session: curSession, idx: curIdx, score: score, lvl: curLvl, body: lastRawBody, size: lastSetSize }));
-
-        let itm = curSession[curIdx];
-        let qHtml = itm.q.split(/\s+/).map(w => w === '___' ? '<span id="answer-slot" class="blank-space">...</span>' : `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
-        if(!itm.q.includes('___')) qHtml += ' <span id="answer-slot" class="blank-space">...</span>';
-
-        document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
-        document.getElementById('reader-display').className = ""; 
-
-        let html = itm.all.sort(() => 0.5 - Math.random()).map(o => {
-            let optionHtml = o.split(/\s+/).map(ow => `<span class="word" onclick="trans(this)">${ow}</span>`).join(' ');
-            return `<div class="test-opt" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')"><div>${optionHtml}</div></div>`;
-        }).join('');
-        document.getElementById('test-ui').innerHTML = html;
-    }
-
-    function evalAns(el, sel, cor) {
-        if(event.target.classList.contains('word')) return;
-        const options = document.querySelectorAll('.test-opt');
-        options.forEach(o => o.style.pointerEvents = 'none');
-        let itm = curSession[curIdx];
-        let display = document.getElementById('reader-display');
-        let slot = document.getElementById('answer-slot');
-        if(slot) slot.innerText = sel;
-
-        if(sel === cor) {
-            el.classList.add('ans-correct'); display.classList.add('glow-ui');
-            score++; mistakes = mistakes.filter(m => m.q !== itm.q);
-        } else {
-            el.classList.add('ans-wrong'); display.classList.add('shake-ui');
-            options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); });
-            if(!mistakes.some(m => m.q === itm.q)) mistakes.push(itm);
-        }
-        localStorage.setItem('gm_mistakes', JSON.stringify(mistakes));
-        setTimeout(() => { curIdx++; showQ(); }, 1800);
-    }
-
-    function resumeTest() {
-        let saved = JSON.parse(localStorage.getItem('gm_last_test'));
-        if(saved) {
-            curSession = saved.session; curIdx = saved.idx; score = saved.score; curLvl = saved.lvl; lastRawBody = saved.body; lastSetSize = saved.size;
-            document.getElementById('home-screen').classList.add('hidden');
-            document.getElementById('work-screen').classList.remove('hidden');
-            document.getElementById('test-ui').classList.remove('hidden');
-            showQ();
-        }
-    }
-
-    function playAll() { synth.cancel(); let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function playSelect() { let t = window.getSelection().toString(); if(!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function pauseAudio() { synth.pause(); }
-    function stopAudio() { synth.cancel(); }
-    function goHome() { document.getElementById('lvl-screen').classList.add('hidden'); document.getElementById('work-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); document.getElementById('nav-title').innerText = "GERMANA MASTER"; checkResume(); stopAudio(); }
+    function goHome() { document.getElementById('lvl-screen').classList.add('hidden'); document.getElementById('work-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); document.getElementById('nav-title').innerText = "GERMANA MASTER"; stopAudio(); }
     function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     function saveData() { let l = document.getElementById('in-lvl').value, t = document.getElementById('in-type').value, title = document.getElementById('in-title').value, body = document.getElementById('in-body').value; if(!title || !body) return; db[l].push({ title, body, type: t }); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); }
