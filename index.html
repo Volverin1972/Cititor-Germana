@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Expert ULTIMATE - Versiune Finală</title>
+    <title>Germana Expert ULTIMATE</title>
     <style>
         :root { 
             --bg-app: #f0f2f5; --bg-card: #ffffff; 
@@ -35,9 +35,7 @@
         #trans-box { position: sticky; top: 135px; z-index: 850; min-height: 50px; background: #e9f7ef; color: #155724; font-weight: bold; font-size: var(--f-size-trans); text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 
         /* Stil pentru caseta de explicație */
-        #expl-box { margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 16px; display: none; border: 1px solid #ddd; background: #fff; line-height: 1.4; }
-        .expl-cor { border-left: 5px solid #28a745; color: #155724; background: #d4edda !important; }
-        .expl-err { border-left: 5px solid #dc3545; color: #721c24; background: #f8d7da !important; }
+        #expl-container { margin: 10px 0; padding: 12px; border-radius: 10px; font-size: 16px; display: none; border-left: 5px solid #28a745; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
         .test-opt { display: flex; align-items: center; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; margin: 10px 0; padding: 15px; cursor: pointer; font-size: 18px; position: relative; }
         .ans-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; }
@@ -98,7 +96,7 @@
     </div>
     <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
     <div id="reader-display"></div>
-    <div id="expl-box"></div>
+    <div id="expl-container"></div>
     <div id="test-ui" class="hidden" style="margin-top:20px;"></div>
     <button class="lvl-btn" style="width:100%; margin-top:25px; background:#6c757d" onclick="backToList()">⬅️ Înapoi la listă</button>
 </div>
@@ -116,7 +114,7 @@
     <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
     <select id="in-type"><option value="L">📄 Lectură</option><option value="T">🧠 Test</option></select>
     <input type="text" id="in-title" placeholder="Titlu">
-    <textarea id="in-body" style="height:100px" placeholder="Ex: Întrebare | Cor | Greșit | Explicație"></textarea>
+    <textarea id="in-body" style="height:100px" placeholder="Întrebare | Cor | Greșit | Explicație"></textarea>
     <button class="lvl-btn active-lvl" style="width:100%; margin-top:10px;" onclick="saveData()">💾 SALVEAZĂ</button>
     <hr>
     <button class="lvl-btn" style="width:100%; background:#007bff" onclick="doExport()">📥 SALVEAZĂ BACKUP</button>
@@ -183,7 +181,7 @@
         if(item.type === 'L') {
             document.getElementById('audio-ui').classList.remove('hidden');
             document.getElementById('test-ui').classList.add('hidden');
-            document.getElementById('expl-box').style.display = 'none';
+            document.getElementById('expl-container').style.display = 'none';
             renderReading(item.body);
         } else {
             document.getElementById('audio-ui').classList.add('hidden');
@@ -225,21 +223,27 @@
         lastSetSize = size;
         let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
-            // Logica noua: cautam daca avem explicatie la final (p.length > numar variante)
-            // Presupunem ca tot ce ramane dupa variantele de raspuns este explicatia
-            return { q: p[0], cor: p[1], expl: p[p.length-1].includes('?') || p[p.length-1].length > 5 ? p.pop() : "Fără explicație", all: p.slice(1) };
+            let q = p[0], cor = p[1], expl = "";
+            let variants = p.slice(1);
+            // Dacă ultima secțiune pare a fi o explicație (mai mult de 2 variante și un text lung la final)
+            if(p.length > 3 && (p[p.length-1].length > 10 || p[p.length-1].includes(' '))) {
+                expl = p[p.length-1];
+                variants = p.slice(1, p.length-1);
+            }
+            return { q, cor, expl, all: variants };
         });
-        let fresh = pool.sort(() => 0.5 - Math.random()).slice(0, size);
-        curSession = fresh;
+        curSession = pool.sort(() => 0.5 - Math.random()).slice(0, size);
         curIdx = 0; score = 0; showQ();
     }
 
     function showQ() {
-        document.getElementById('expl-box').style.display = 'none';
+        document.getElementById('expl-container').style.display = 'none';
         if(curIdx >= curSession.length) { 
             localStorage.removeItem('gm_last_test');
-            document.getElementById('reader-display').innerHTML = `<h2>Scor: ${score}/${curSession.length}</h2>`;
-            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="initSmartTest(lastRawBody, lastSetSize)">REÎNCEPE</button>`;
+            document.getElementById('reader-display').innerHTML = `<h2>Final! Scor: ${score}/${curSession.length}</h2>`;
+            document.getElementById('test-ui').innerHTML = `
+                <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:10px" onclick="initSmartTest(lastRawBody, lastSetSize)">🆕 SET NOU (DIN ACEST MATERIAL)</button>
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToList()">⬅️ LISTĂ MATERIALE</button>`;
             return; 
         }
         
@@ -251,32 +255,35 @@
         document.getElementById('reader-display').className = ""; 
 
         let html = itm.all.sort(() => 0.5 - Math.random()).map(o => {
-            return `<div class="test-opt" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')"><div>${o}</div></div>`;
+            let optionWords = o.split(/\s+/).map(ow => `<span class="word" onclick="trans(this)">${ow}</span>`).join(' ');
+            return `<div class="test-opt" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')"><div>${optionWords}</div></div>`;
         }).join('');
         document.getElementById('test-ui').innerHTML = html;
     }
 
     function evalAns(el, sel, cor) {
+        if(event.target.classList.contains('word')) return;
         const options = document.querySelectorAll('.test-opt');
         options.forEach(o => o.style.pointerEvents = 'none');
         let itm = curSession[curIdx];
         let display = document.getElementById('reader-display');
-        let explBox = document.getElementById('expl-box');
-        
-        explBox.innerHTML = `<strong>Explicație:</strong> <br> ${itm.expl}`;
-        explBox.style.display = 'block';
+        let slot = document.getElementById('answer-slot');
+        if(slot) slot.innerText = sel;
 
         if(sel === cor) {
             el.classList.add('ans-correct'); display.classList.add('glow-ui');
-            explBox.className = 'expl-cor';
             score++;
         } else {
             el.classList.add('ans-wrong'); display.classList.add('shake-ui');
-            explBox.className = 'expl-err';
             options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); });
         }
         
-        setTimeout(() => { curIdx++; showQ(); }, 3500); // Timp mai lung ca sa apuci sa citesti explicatia
+        if(itm.expl) {
+            document.getElementById('expl-container').innerHTML = `<strong>Explicație:</strong><br>${itm.expl}`;
+            document.getElementById('expl-container').style.display = 'block';
+        }
+
+        setTimeout(() => { curIdx++; showQ(); }, itm.expl ? 4000 : 1800);
     }
 
     function resumeTest() {
