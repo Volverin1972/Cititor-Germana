@@ -123,7 +123,6 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('gm_db_v3') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
-    let mistakes = JSON.parse(localStorage.getItem('gm_mistakes') || '[]');
     let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"24","rate":"1"}');
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
     let lastRawBody = '', lastSetSize = 10;
@@ -131,8 +130,37 @@
     window.onload = () => { loadCfg(); checkResume(); };
 
     function checkResume() {
-        if(localStorage.getItem('gm_last_test')) document.getElementById('resume-container').classList.remove('hidden');
-        else document.getElementById('resume-container').classList.add('hidden');
+        if(localStorage.getItem('gm_last_test')) {
+            document.getElementById('resume-container').classList.remove('hidden');
+        } else {
+            document.getElementById('resume-container').classList.add('hidden');
+        }
+    }
+
+    function resumeTest() {
+        let saved = JSON.parse(localStorage.getItem('gm_last_test'));
+        if(!saved) return;
+        curSession = saved.session;
+        curIdx = saved.idx;
+        score = saved.score;
+        lastRawBody = saved.raw;
+        lastSetSize = saved.size;
+        
+        document.getElementById('home-screen').classList.add('hidden');
+        document.getElementById('work-screen').classList.remove('hidden');
+        document.getElementById('test-ui').classList.remove('hidden');
+        document.getElementById('audio-ui').classList.add('hidden');
+        showQ();
+    }
+
+    function saveProgress() {
+        localStorage.setItem('gm_last_test', JSON.stringify({
+            session: curSession,
+            idx: curIdx,
+            score: score,
+            raw: lastRawBody,
+            size: lastSetSize
+        }));
     }
 
     function loadCfg() {
@@ -233,7 +261,9 @@
             return { q, cor, expl, all: variants };
         });
         curSession = pool.sort(() => 0.5 - Math.random()).slice(0, size);
-        curIdx = 0; score = 0; showQ();
+        curIdx = 0; score = 0; 
+        saveProgress();
+        showQ();
     }
 
     function showQ() {
@@ -241,6 +271,7 @@
         document.getElementById('next-ui').classList.add('hidden');
         if(curIdx >= curSession.length) { 
             localStorage.removeItem('gm_last_test');
+            checkResume();
             document.getElementById('reader-display').innerHTML = `<h2>Final! Scor: ${score}/${curSession.length}</h2>`;
             document.getElementById('btn-back-main').classList.add('hidden');
             document.getElementById('test-ui').innerHTML = `
@@ -284,12 +315,13 @@
             document.getElementById('expl-container').style.display = 'block';
         }
         
-        // Afișează butonul de continuare
+        saveProgress();
         document.getElementById('next-ui').classList.remove('hidden');
     }
 
     function nextQ() {
         curIdx++;
+        saveProgress();
         showQ();
     }
 
@@ -312,10 +344,17 @@
     function playSelect() { let t = window.getSelection().toString(); if(!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
     function pauseAudio() { synth.pause(); }
     function stopAudio() { synth.cancel(); }
-    function goHome() { document.getElementById('lvl-screen').classList.add('hidden'); document.getElementById('work-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); document.getElementById('nav-title').innerText = "GERMANA MASTER"; stopAudio(); }
+    function goHome() { 
+        document.getElementById('lvl-screen').classList.add('hidden'); 
+        document.getElementById('work-screen').classList.add('hidden'); 
+        document.getElementById('home-screen').classList.remove('hidden'); 
+        document.getElementById('nav-title').innerText = "GERMANA MASTER"; 
+        checkResume();
+        stopAudio(); 
+    }
     function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
-    function doExport() { let blob = new Blob([JSON.stringify({db, mistakes, config})], {type:"application/json"}); let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_germana.json"; a.click(); }
+    function doExport() { let blob = new Blob([JSON.stringify({db, config})], {type:"application/json"}); let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_germana.json"; a.click(); }
     function doImport(input) { let file = input.files[0]; if(!file) return; let r = new FileReader(); r.onload = (e) => { let d = JSON.parse(e.target.result); if(d.db) { db=d.db; localStorage.setItem('gm_db_v3', JSON.stringify(db)); location.reload(); } }; r.readAsText(file); }
     function delItem(l, idx) { if(confirm("Ștergi?")) { db[l].splice(idx, 1); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); } }
 </script>
