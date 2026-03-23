@@ -58,7 +58,6 @@
 <div id="top-bar">
     <div class="nav-btns">
         <button class="nav-icon" onclick="goHome()">⬅️</button>
-        <button class="nav-icon" onclick="history.forward()">➡️</button>
     </div>
     <span id="nav-title">GERMANA MASTER</span>
     <button onclick="toggleSet()" style="background:none; border:none; color:white; font-size:28px;">⚙️</button>
@@ -221,8 +220,6 @@
     }
 
     function askSize() {
-        // RESET TRADUCERE LA SELECȚIE
-        document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
         document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3>`;
         document.getElementById('test-ui').innerHTML = `
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -231,7 +228,6 @@
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 15)">15</button>
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 20)">20</button>
             </div>`;
-        document.getElementById('btn-back-main').classList.remove('hidden');
     }
 
     function renderReading(txt) {
@@ -271,17 +267,17 @@
 
     function showQ() {
         document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
+        
         document.getElementById('expl-container').style.display = 'none';
         document.getElementById('next-ui').classList.add('hidden');
-        
         if(curIdx >= curSession.length) { 
             localStorage.removeItem('gm_last_test');
             checkResume();
             document.getElementById('reader-display').innerHTML = `<h2>Final! Scor: ${score}/${curSession.length}</h2>`;
-            document.getElementById('btn-back-main').classList.add('hidden'); // Ascundem butonul gri de jos
+            document.getElementById('btn-back-main').classList.add('hidden');
             document.getElementById('test-ui').innerHTML = `
-                <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 REIA TESTUL (RANDOM)</button>
-                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="askSize()">⬅️ PAGINA ANTERIOARĂ</button>`;
+                <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 URMĂTORUL SET (RANDOM)</button>
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToList()">⬅️ ÎNAPOI LA LISTĂ</button>`;
             return; 
         }
         
