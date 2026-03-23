@@ -287,39 +287,68 @@
         document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
         document.getElementById('expl-container').style.display = 'none';
         document.getElementById('next-ui').classList.add('hidden');
+        
         if(!skipHistory && curIdx < curSession.length) saveState('work-screen', `Întrebarea ${curIdx + 1}`, curIdx);
+        
         if(curIdx >= curSession.length) { 
+            localStorage.removeItem('gm_last_test');
+            checkResume();
             document.getElementById('reader-display').innerHTML = `<h2>Final! Scor: ${score}/${curSession.length}</h2>`;
             document.getElementById('btn-back-main').classList.add('hidden');
-            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn active-lvl" style="width:100%" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 REIA TESTUL</button>`;
+            document.getElementById('test-ui').innerHTML = `
+                <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 URMĂTORUL SET (RANDOM)</button>
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToList()">ÎNAPOI LA LISTĂ</button>`;
             return; 
         }
+        
         let itm = curSession[curIdx];
         let qHtml = itm.q.split(/\s+/).map(w => w === '___' ? '<span id="answer-slot" class="blank-space">...</span>' : `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
         if(!itm.q.includes('___')) qHtml += ' <span id="answer-slot" class="blank-space">...</span>';
         document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
-        let html = itm.all.sort(() => 0.5 - Math.random()).map(o => `<div class="test-opt" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')">${o}</div>`).join('');
+        
+        let html = itm.all.sort(() => 0.5 - Math.random()).map(o => {
+            let optionWords = o.split(/\s+/).map(ow => `<span class="word" onclick="trans(this)">${ow}</span>`).join(' ');
+            return `<div class="test-opt" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')"><div>${optionWords}</div></div>`;
+        }).join('');
         document.getElementById('test-ui').innerHTML = html;
     }
 
     function evalAns(el, sel, cor) {
+        // CHIRURGICAL: Verificăm dacă click-ul a fost pe un cuvânt (pentru traducere)
+        if(event.target.classList.contains('word')) return;
+
         const options = document.querySelectorAll('.test-opt');
         options.forEach(o => o.style.pointerEvents = 'none');
-        if(sel === cor) { el.classList.add('ans-correct'); score++; } 
-        else { el.classList.add('ans-wrong'); options.forEach(o => { if(o.innerText === cor) o.classList.add('ans-correct'); }); }
+        
+        let slot = document.getElementById('answer-slot');
+        if(slot) slot.innerText = sel;
+
+        if(sel === cor) {
+            el.classList.add('ans-correct');
+            score++;
+        } else {
+            el.classList.add('ans-wrong');
+            options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); });
+        }
+        
         let itm = curSession[curIdx];
-        if(itm.expl) { document.getElementById('expl-container').innerHTML = itm.expl; document.getElementById('expl-container').style.display = 'block'; }
+        if(itm.expl) { 
+            document.getElementById('expl-container').innerHTML = `<strong>Explicație:</strong><br>${itm.expl}`; 
+            document.getElementById('expl-container').style.display = 'block'; 
+        }
         document.getElementById('next-ui').classList.remove('hidden');
     }
 
     function nextQ() { curIdx++; saveProgress(); showQ(); }
-    function backToList() { historyBack(); }
+    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     function stopAudio() { synth.cancel(); }
     function playAll() { synth.cancel(); let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
     function playSelect() { let t = window.getSelection().toString(); if(!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
     function pauseAudio() { synth.pause(); }
+    
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' '); }
+    
     async function trans(el) {
         event.stopPropagation();
         document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
@@ -330,6 +359,7 @@
             let data = await res.json(); document.getElementById('trans-box').innerText = data[0][0][0];
         } catch(e) { document.getElementById('trans-box').innerText = "Eroare"; }
     }
+
     function saveData() { 
         let l = document.getElementById('in-lvl').value, t = document.getElementById('in-type').value, title = document.getElementById('in-title').value, body = document.getElementById('in-body').value; 
         if(!title || !body) { alert("Completează!"); return; }
