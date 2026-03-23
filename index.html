@@ -255,6 +255,7 @@
     function askSize() {
         document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3>`;
         document.getElementById('test-ui').innerHTML = `
+            <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px; background:#007bff" onclick="initSmartTest(lastRawBody, 999)">♾️ FĂRĂ LIMITĂ (PÂNĂ LA FINAL)</button>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 5)">5</button>
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 10)">10</button>
