@@ -221,7 +221,6 @@
     }
 
     function askSize() {
-        // RESET TRADUCERE: Golește textul la revenirea la selecție
         document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
         document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3>`;
         document.getElementById('test-ui').innerHTML = `
@@ -231,6 +230,12 @@
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 15)">15</button>
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 20)">20</button>
             </div>`;
+    }
+
+    // NOUA FUNCȚIE: Curăță ecranul de scor și revine la alegerea mărimii
+    function backToSetup() {
+        document.getElementById('btn-back-main').classList.remove('hidden');
+        askSize();
     }
 
     function renderReading(txt) {
@@ -269,11 +274,10 @@
     }
 
     function showQ() {
-        // RESET TRADUCERE: Golește textul la fiecare întrebare nouă
         document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
-        
         document.getElementById('expl-container').style.display = 'none';
         document.getElementById('next-ui').classList.add('hidden');
+        
         if(curIdx >= curSession.length) { 
             localStorage.removeItem('gm_last_test');
             checkResume();
@@ -281,7 +285,7 @@
             document.getElementById('btn-back-main').classList.add('hidden');
             document.getElementById('test-ui').innerHTML = `
                 <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 URMĂTORUL SET (RANDOM)</button>
-                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="askSize()">⬅️ PAGINA ANTERIOARĂ</button>`;
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToSetup()">⬅️ PAGINA ANTERIOARĂ</button>`;
             return; 
         }
         
