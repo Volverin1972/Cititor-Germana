@@ -216,11 +216,12 @@
             document.getElementById('audio-ui').classList.add('hidden');
             document.getElementById('test-ui').classList.remove('hidden');
             lastRawBody = item.body;
-            askSize();
+            showSetupScreen();
         }
     }
 
-    function askSize() {
+    // REPARARE: Funcție curată pentru ecranul de alegere a dimensiunii
+    function showSetupScreen() {
         document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
         document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3>`;
         document.getElementById('test-ui').innerHTML = `
@@ -230,12 +231,7 @@
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 15)">15</button>
                 <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 20)">20</button>
             </div>`;
-    }
-
-    // NOUA FUNCȚIE: Curăță ecranul de scor și revine la alegerea mărimii
-    function backToSetup() {
         document.getElementById('btn-back-main').classList.remove('hidden');
-        askSize();
     }
 
     function renderReading(txt) {
@@ -285,7 +281,7 @@
             document.getElementById('btn-back-main').classList.add('hidden');
             document.getElementById('test-ui').innerHTML = `
                 <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 URMĂTORUL SET (RANDOM)</button>
-                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToSetup()">⬅️ PAGINA ANTERIOARĂ</button>`;
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="showSetupScreen()">⬅️ PAGINA ANTERIOARĂ</button>`;
             return; 
         }
         
