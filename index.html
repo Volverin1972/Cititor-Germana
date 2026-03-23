@@ -48,6 +48,10 @@
 
         .side-panel { position: fixed; top: 0; right: 0; width: 78.7%; height: 97%; background: white; z-index: 2000; padding: 18px; box-shadow: -5px 0 20px rgba(0,0,0,0.2); transform: translateX(100%); transition: 0.4s; overflow-y: auto; border-radius: 15px 0 0 15px; }
         .side-panel.open { transform: translateX(0); }
+        .side-panel label { display: block; margin-top: 10px; font-weight: bold; color: #333; font-size: 13px; }
+        .side-panel input, .side-panel select, .side-panel textarea { width: 100%; padding: 9px; margin-top: 3px; border-radius: 8px; border: 1px solid #ddd; font-size: 13px; }
+        .side-panel h3 { font-size: 1.0em; margin-top: 0; }
+        .side-panel hr { margin: 12px 0; opacity: 0.3; }
     </style>
 </head>
 <body>
@@ -102,7 +106,19 @@
 
 <div id="set-panel" class="side-panel">
     <h3>⚙️ Setări & Backup</h3>
+    <label>Culoare Fundal:</label><input type="color" id="cfg-bg" onchange="applyCfg()">
+    <label>Font Lectură: <span id="val-f1">24</span>px</label><input type="range" id="cfg-f1" min="14" max="40" value="24" oninput="applyCfg()">
+    <label>Viteză Voce:</label><input type="range" id="cfg-rate" min="0.4" max="1.6" step="0.1" value="1" onchange="applyCfg()">
+    <hr>
+    <h3>➕ Adaugă Material</h3>
+    <select id="in-lvl"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
+    <select id="in-type"><option value="L">📄 Lectură</option><option value="T">🧠 Test</option></select>
+    <input type="text" id="in-title" placeholder="Titlu">
+    <textarea id="in-body" style="height:100px" placeholder="Întrebare | Răspuns_Corect | Variantă_Greșită | Explicație"></textarea>
     <button class="lvl-btn active-lvl" style="width:100%; margin-top:10px;" onclick="saveData()">💾 SALVEAZĂ</button>
+    <hr>
+    <button class="lvl-btn" style="width:100%; background:#007bff" onclick="doExport()">📥 SALVEAZĂ BACKUP</button>
+    <div style="margin-top:15px;"><label>Restaurare Date (.json):</label><input type="file" id="import-file" accept=".json" onchange="doImport(this)"></div>
     <button class="lvl-btn" style="width:100%; background:#343a40; margin-top:20px" onclick="toggleSet()">ÎNCHIDE</button>
 </div>
 
@@ -112,22 +128,13 @@
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
     let lastRawBody = '', lastSetSize = 10;
 
-    // Sistem Istoric
+    // --- LOGICĂ ISTORIC ---
     let appHistory = [];
     let historyIdx = -1;
 
-    window.onload = () => { 
-        loadCfg(); 
-        checkResume(); 
-        saveState('home-screen', 'GERMANA MASTER'); 
-    };
-
-    function saveState(screenId, title, extra = null) {
-        // Dacă navigăm manual, ștergem istoricul "înainte"
-        if (historyIdx < appHistory.length - 1) {
-            appHistory = appHistory.slice(0, historyIdx + 1);
-        }
-        appHistory.push({ screenId, title, extra, curLvl, curTab });
+    function saveState(screenId, title) {
+        if (historyIdx < appHistory.length - 1) appHistory = appHistory.slice(0, historyIdx + 1);
+        appHistory.push({ screenId, title, curLvl, curTab });
         historyIdx++;
         updateNavButtons();
     }
@@ -152,19 +159,72 @@
     }
 
     function applyState(state) {
-        // Ascunde tot
         ['home-screen', 'lvl-screen', 'work-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
-        
-        // Afișează ecranul din istoric
         document.getElementById(state.screenId).classList.remove('hidden');
         document.getElementById('nav-title').innerText = state.title;
-        
-        curLvl = state.curLvl;
-        curTab = state.curTab;
-
+        curLvl = state.curLvl; curTab = state.curTab;
         if (state.screenId === 'lvl-screen') renderList();
         updateNavButtons();
         stopAudio();
+    }
+    // --- SFÂRȘIT LOGICĂ ISTORIC ---
+
+    window.onload = () => { 
+        loadCfg(); 
+        checkResume(); 
+        saveState('home-screen', 'GERMANA MASTER'); 
+    };
+
+    function checkResume() {
+        if(localStorage.getItem('gm_last_test')) {
+            document.getElementById('resume-container').classList.remove('hidden');
+        } else {
+            document.getElementById('resume-container').classList.add('hidden');
+        }
+    }
+
+    function resumeTest() {
+        let saved = JSON.parse(localStorage.getItem('gm_last_test'));
+        if(!saved) return;
+        curSession = saved.session;
+        curIdx = saved.idx;
+        score = saved.score;
+        lastRawBody = saved.raw;
+        lastSetSize = saved.size;
+        
+        document.getElementById('home-screen').classList.add('hidden');
+        document.getElementById('work-screen').classList.remove('hidden');
+        document.getElementById('test-ui').classList.remove('hidden');
+        document.getElementById('audio-ui').classList.add('hidden');
+        showQ();
+        saveState('work-screen', 'Test Reluat');
+    }
+
+    function saveProgress() {
+        localStorage.setItem('gm_last_test', JSON.stringify({
+            session: curSession,
+            idx: curIdx,
+            score: score,
+            raw: lastRawBody,
+            size: lastSetSize
+        }));
+    }
+
+    function loadCfg() {
+        document.getElementById('cfg-bg').value = config.bg;
+        document.getElementById('cfg-f1').value = config.font;
+        document.getElementById('cfg-rate').value = config.rate;
+        applyCfg(false);
+    }
+
+    function applyCfg(save = true) {
+        config.bg = document.getElementById('cfg-bg').value;
+        config.font = document.getElementById('cfg-f1').value;
+        config.rate = document.getElementById('cfg-rate').value;
+        document.body.style.background = config.bg;
+        document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
+        document.getElementById('val-f1').innerText = config.font;
+        if(save) localStorage.setItem('gm_config', JSON.stringify(config));
     }
 
     function openLvl(l) {
@@ -173,42 +233,12 @@
         document.getElementById('lvl-screen').classList.remove('hidden');
         let title = "Nivel " + l;
         document.getElementById('nav-title').innerText = title;
-        curTab = 'L';
-        renderList();
+        switchTab('L');
         saveState('lvl-screen', title);
     }
 
-    function startWork(l, idx) {
-        let item = db[l][idx];
-        document.getElementById('lvl-screen').classList.add('hidden');
-        document.getElementById('work-screen').classList.remove('hidden');
-        
-        if(item.type === 'L') {
-            document.getElementById('audio-ui').classList.remove('hidden');
-            document.getElementById('test-ui').classList.add('hidden');
-            renderReading(item.body);
-        } else {
-            document.getElementById('audio-ui').classList.add('hidden');
-            document.getElementById('test-ui').classList.remove('hidden');
-            lastRawBody = item.body;
-            askSize();
-        }
-        saveState('work-screen', item.title);
-    }
+    function switchTab(t) { curTab = t; renderList(); }
 
-    function goHome() { 
-        document.getElementById('lvl-screen').classList.add('hidden'); 
-        document.getElementById('work-screen').classList.add('hidden'); 
-        document.getElementById('home-screen').classList.remove('hidden'); 
-        document.getElementById('nav-title').innerText = "GERMANA MASTER"; 
-        saveState('home-screen', 'GERMANA MASTER');
-        stopAudio(); 
-    }
-
-    function backToList() { historyBack(); }
-
-    // --- Funcțiile tale originale rămase intacte ---
-    function checkResume() { if(localStorage.getItem('gm_last_test')) document.getElementById('resume-container').classList.remove('hidden'); }
     function renderList() {
         let container = document.getElementById('content-list');
         let items = db[curLvl].filter(i => i.type === curTab);
@@ -219,13 +249,44 @@
             </div>
         `).join('') || '<p style="text-align:center;">Gol.</p>';
     }
-    function switchTab(t) { curTab = t; renderList(); }
+
+    function startWork(l, idx) {
+        let item = db[l][idx];
+        document.getElementById('lvl-screen').classList.add('hidden');
+        document.getElementById('work-screen').classList.remove('hidden');
+        document.getElementById('btn-back-main').classList.remove('hidden');
+        document.getElementById('next-ui').classList.add('hidden');
+        if(item.type === 'L') {
+            document.getElementById('audio-ui').classList.remove('hidden');
+            document.getElementById('test-ui').classList.add('hidden');
+            document.getElementById('expl-container').style.display = 'none';
+            renderReading(item.body);
+        } else {
+            document.getElementById('audio-ui').classList.add('hidden');
+            document.getElementById('test-ui').classList.remove('hidden');
+            lastRawBody = item.body;
+            askSize();
+        }
+        saveState('work-screen', item.title);
+    }
+
     function askSize() {
         document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3>`;
-        document.getElementById('test-ui').innerHTML = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"><button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 5)">5</button><button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 10)">10</button></div>`;
+        document.getElementById('test-ui').innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 5)">5</button>
+                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 10)">10</button>
+                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 15)">15</button>
+                <button class="lvl-btn active-lvl" onclick="initSmartTest(lastRawBody, 20)">20</button>
+            </div>`;
     }
-    function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' '); }
+
+    function renderReading(txt) {
+        document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
+    }
+
     async function trans(el) {
+        event.stopPropagation();
         document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
         el.classList.add('highlight-green');
         let w = el.innerText.replace(/[.,!?;:()]/g, '');
@@ -236,32 +297,118 @@
             document.getElementById('trans-box').innerText = data[0][0][0];
         } catch(e) { document.getElementById('trans-box').innerText = "Eroare"; }
     }
+
     function initSmartTest(raw, size) {
         lastSetSize = size;
         let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
-            return { q: p[0], cor: p[1], all: p.slice(1, p.length-1), expl: p[p.length-1] };
+            let q = p[0], cor = p[1], expl = "";
+            let variants = p.slice(1);
+            if(p.length > 3 && (p[p.length-1].length > 10 || p[p.length-1].includes(' '))) {
+                expl = p[p.length-1];
+                variants = p.slice(1, p.length-1);
+            }
+            return { q, cor, expl, all: variants };
         });
         curSession = pool.sort(() => 0.5 - Math.random()).slice(0, size);
-        curIdx = 0; score = 0; showQ();
+        curIdx = 0; score = 0; 
+        saveProgress();
+        showQ();
     }
+
     function showQ() {
+        document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
+        
+        document.getElementById('expl-container').style.display = 'none';
+        document.getElementById('next-ui').classList.add('hidden');
         if(curIdx >= curSession.length) { 
+            localStorage.removeItem('gm_last_test');
+            checkResume();
             document.getElementById('reader-display').innerHTML = `<h2>Final! Scor: ${score}/${curSession.length}</h2>`;
-            document.getElementById('test-ui').innerHTML = `<button class="lvl-btn" style="width:100%" onclick="backToList()">ÎNAPOI LA LISTĂ</button>`;
+            document.getElementById('btn-back-main').classList.add('hidden');
+            document.getElementById('test-ui').innerHTML = `
+                <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 URMĂTORUL SET (RANDOM)</button>
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToList()">ÎNAPOI LA LISTĂ</button>`;
             return; 
         }
+        
         let itm = curSession[curIdx];
-        document.getElementById('reader-display').innerHTML = `<h3>${itm.q}</h3>`;
-        document.getElementById('test-ui').innerHTML = itm.all.map(o => `<div class="test-opt" onclick="evalAns(this, '${o}', '${itm.cor}')">${o}</div>`).join('');
+        let qHtml = itm.q.split(/\s+/).map(w => w === '___' ? '<span id="answer-slot" class="blank-space">...</span>' : `<span class="word" onclick="trans(this)">${w}</span>`).join(' ');
+        if(!itm.q.includes('___')) qHtml += ' <span id="answer-slot" class="blank-space">...</span>';
+
+        document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
+        document.getElementById('reader-display').className = ""; 
+
+        let html = itm.all.sort(() => 0.5 - Math.random()).map(o => {
+            let optionWords = o.split(/\s+/).map(ow => `<span class="word" onclick="trans(this)">${ow}</span>`).join(' ');
+            return `<div class="test-opt" onclick="evalAns(this, '${o.replace(/'/g, "\\'")}', '${itm.cor.replace(/'/g, "\\'")}')"><div>${optionWords}</div></div>`;
+        }).join('');
+        document.getElementById('test-ui').innerHTML = html;
     }
+
     function evalAns(el, sel, cor) {
-        if(sel === cor) { el.classList.add('ans-correct'); score++; } else { el.classList.add('ans-wrong'); }
-        setTimeout(() => { curIdx++; showQ(); }, 1000);
+        if(event.target.classList.contains('word')) return;
+        const options = document.querySelectorAll('.test-opt');
+        options.forEach(o => o.style.pointerEvents = 'none');
+        let itm = curSession[curIdx];
+        let slot = document.getElementById('answer-slot');
+        if(slot) slot.innerText = sel;
+
+        if(sel === cor) {
+            el.classList.add('ans-correct'); document.getElementById('reader-display').classList.add('glow-ui');
+            score++;
+        } else {
+            el.classList.add('ans-wrong'); document.getElementById('reader-display').classList.add('shake-ui');
+            options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); });
+        }
+        
+        if(itm.expl) {
+            document.getElementById('expl-container').innerHTML = `<strong>Explicație:</strong><br>${itm.expl}`;
+            document.getElementById('expl-container').style.display = 'block';
+        }
+        
+        saveProgress();
+        document.getElementById('next-ui').classList.remove('hidden');
     }
+
+    function nextQ() {
+        curIdx++;
+        saveProgress();
+        showQ();
+    }
+
+    function saveData() { 
+        let l = document.getElementById('in-lvl').value;
+        let t = document.getElementById('in-type').value;
+        let title = document.getElementById('in-title').value;
+        let body = document.getElementById('in-body').value; 
+        if(!title || !body) { alert("Completează toate câmpurile!"); return; }
+        db[l].push({ title, body, type: t }); 
+        localStorage.setItem('gm_db_v3', JSON.stringify(db)); 
+        document.getElementById('in-title').value = "";
+        document.getElementById('in-body').value = "";
+        toggleSet();
+        renderList();
+        alert("Salvat cu succes!");
+    }
+
+    function playAll() { synth.cancel(); let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
+    function playSelect() { let t = window.getSelection().toString(); if(!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
+    function pauseAudio() { synth.pause(); }
     function stopAudio() { synth.cancel(); }
-    function loadCfg() { document.body.style.background = config.bg; }
+    function goHome() { 
+        document.getElementById('lvl-screen').classList.add('hidden'); 
+        document.getElementById('work-screen').classList.add('hidden'); 
+        document.getElementById('home-screen').classList.remove('hidden'); 
+        document.getElementById('nav-title').innerText = "GERMANA MASTER"; 
+        checkResume();
+        stopAudio(); 
+        saveState('home-screen', 'GERMANA MASTER');
+    }
+    function backToList() { historyBack(); }
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
+    function doExport() { let blob = new Blob([JSON.stringify({db, config})], {type:"application/json"}); let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_germana.json"; a.click(); }
+    function doImport(input) { let file = input.files[0]; if(!file) return; let r = new FileReader(); r.onload = (e) => { let d = JSON.parse(e.target.result); if(d.db) { db=d.db; localStorage.setItem('gm_db_v3', JSON.stringify(db)); location.reload(); } }; r.readAsText(file); }
     function delItem(l, idx) { if(confirm("Ștergi?")) { db[l].splice(idx, 1); localStorage.setItem('gm_db_v3', JSON.stringify(db)); renderList(); } }
 </script>
 </body>
