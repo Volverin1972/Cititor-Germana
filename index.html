@@ -122,7 +122,6 @@
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
     let lastRawBody = '', lastSetSize = 10;
 
-    // --- LOGICĂ ISTORIC ---
     let appHistory = [];
     let historyIdx = -1;
     let isApplyingState = false;
@@ -159,9 +158,7 @@
         ['home-screen', 'lvl-screen', 'work-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
         document.getElementById(state.screenId).classList.remove('hidden');
         document.getElementById('nav-title').innerText = state.title;
-        
-        curLvl = state.curLvl; 
-        curTab = state.curTab;
+        curLvl = state.curLvl; curTab = state.curTab;
 
         if (state.qIdx !== -1) {
             curIdx = state.qIdx;
@@ -171,7 +168,6 @@
         } else if (state.screenId === 'work-screen' && state.title === "Alege dimensiune test") {
             askSize();
         }
-        
         updateNavButtons();
         stopAudio();
         isApplyingState = false;
@@ -191,7 +187,6 @@
         document.getElementById('home-screen').classList.add('hidden');
         document.getElementById('work-screen').classList.remove('hidden');
         document.getElementById('test-ui').classList.remove('hidden');
-        document.getElementById('audio-ui').classList.add('hidden');
         showQ();
     }
 
@@ -272,8 +267,7 @@
         lastSetSize = size;
         let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
             let p = line.split('|').map(x => x.trim());
-            let q = p[0], cor = p[1], expl = "";
-            let variants = p.slice(1);
+            let q = p[0], cor = p[1], variants = p.slice(1), expl = "";
             if(p.length > 3 && (p[p.length-1].length > 10 || p[p.length-1].includes(' '))) {
                 expl = p[p.length-1]; variants = p.slice(1, p.length-1);
             }
@@ -287,7 +281,8 @@
         document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
         document.getElementById('expl-container').style.display = 'none';
         document.getElementById('next-ui').classList.add('hidden');
-        
+        document.getElementById('btn-back-main').classList.remove('hidden');
+
         if(!skipHistory && curIdx < curSession.length) saveState('work-screen', `Întrebarea ${curIdx + 1}`, curIdx);
         
         if(curIdx >= curSession.length) { 
@@ -297,7 +292,7 @@
             document.getElementById('btn-back-main').classList.add('hidden');
             document.getElementById('test-ui').innerHTML = `
                 <button class="lvl-btn active-lvl" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize)">🚀 URMĂTORUL SET (RANDOM)</button>
-                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToList()">ÎNAPOI LA LISTĂ</button>`;
+                <button class="lvl-btn" style="width:100%; background:#6c757d" onclick="backToList()">⬅️ ÎNAPOI LA LISTĂ</button>`;
             return; 
         }
         
@@ -314,39 +309,35 @@
     }
 
     function evalAns(el, sel, cor) {
-        // CHIRURGICAL: Verificăm dacă click-ul a fost pe un cuvânt (pentru traducere)
         if(event.target.classList.contains('word')) return;
-
         const options = document.querySelectorAll('.test-opt');
         options.forEach(o => o.style.pointerEvents = 'none');
-        
         let slot = document.getElementById('answer-slot');
         if(slot) slot.innerText = sel;
-
-        if(sel === cor) {
-            el.classList.add('ans-correct');
-            score++;
-        } else {
-            el.classList.add('ans-wrong');
-            options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); });
-        }
-        
+        if(sel === cor) { el.classList.add('ans-correct'); score++; } 
+        else { el.classList.add('ans-wrong'); options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); }); }
         let itm = curSession[curIdx];
-        if(itm.expl) { 
-            document.getElementById('expl-container').innerHTML = `<strong>Explicație:</strong><br>${itm.expl}`; 
-            document.getElementById('expl-container').style.display = 'block'; 
-        }
+        if(itm.expl) { document.getElementById('expl-container').innerHTML = `<strong>Explicație:</strong><br>${itm.expl}`; document.getElementById('expl-container').style.display = 'block'; }
         document.getElementById('next-ui').classList.remove('hidden');
     }
 
     function nextQ() { curIdx++; saveProgress(); showQ(); }
-    function backToList() { document.getElementById('work-screen').classList.add('hidden'); document.getElementById('lvl-screen').classList.remove('hidden'); stopAudio(); }
+    
+    function backToList() {
+        isApplyingState = true;
+        document.getElementById('work-screen').classList.add('hidden');
+        document.getElementById('lvl-screen').classList.remove('hidden');
+        document.getElementById('nav-title').innerText = "Nivel " + curLvl;
+        stopAudio();
+        saveState('lvl-screen', "Nivel " + curLvl);
+        isApplyingState = false;
+    }
+
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     function stopAudio() { synth.cancel(); }
     function playAll() { synth.cancel(); let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
     function playSelect() { let t = window.getSelection().toString(); if(!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
     function pauseAudio() { synth.pause(); }
-    
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' '); }
     
     async function trans(el) {
