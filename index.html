@@ -267,6 +267,9 @@
     }
 
     function showQ() {
+        // RESET TRADUCERE: Golește textul la fiecare întrebare nouă
+        document.getElementById('trans-box').innerText = "Apasă pe cuvinte pentru traducere";
+        
         document.getElementById('expl-container').style.display = 'none';
         document.getElementById('next-ui').classList.add('hidden');
         if(curIdx >= curSession.length) { 
