@@ -126,6 +126,8 @@
     let historyIdx = -1;
     let isApplyingState = false;
 
+    const SEPARABLE_PREFIXES = ['ab', 'an', 'auf', 'aus', 'bei', 'ein', 'mit', 'nach', 'vor', 'zu', 'zurück', 'zusammen'];
+
     function saveState(screenId, title, qIdx = -1) {
         if (isApplyingState) return;
         if (historyIdx < appHistory.length - 1) appHistory = appHistory.slice(0, historyIdx + 1);
@@ -314,7 +316,10 @@
         const options = document.querySelectorAll('.test-opt');
         options.forEach(o => o.style.pointerEvents = 'none');
         let slot = document.getElementById('answer-slot');
-        if(slot) slot.innerText = sel;
+        if(slot) {
+            slot.innerText = sel;
+            slot.style.color = (sel === cor) ? "var(--main-green)" : "#dc3545";
+        }
         if(sel === cor) { el.classList.add('ans-correct'); score++; } 
         else { el.classList.add('ans-wrong'); options.forEach(o => { if(o.innerText.trim() === cor) o.classList.add('ans-correct'); }); }
         let itm = curSession[curIdx];
@@ -342,14 +347,123 @@
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(this)">${w}</span>`).join(' '); }
     
     async function trans(el) {
-        event.stopPropagation();
+        if(window.event) window.event.stopPropagation();
         document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
+        
+        let rawWord = el.innerText.replace(/[.,!?;:()"'„“»«]/g, '').trim();
+        if(!rawWord) return;
+
+        let transBox = document.getElementById('trans-box');
+        transBox.innerText = "Se traduce...";
+
+        let queryText = rawWord;
+        let cleanWordLower = rawWord.toLowerCase();
+        
+        let parentSentence = el.parentElement;
+        let allWords = Array.from(parentSentence.querySelectorAll('.word'));
+        let currentIndex = allWords.indexOf(el);
+
+        let pairedElement = null;
+
+        // Verifică dacă cuvântul are structură de verb conjugat
+        let isVerbLike = /(t|en|st|te|ten)$/i.test(cleanWordLower);
+
+        // Funcție ajutătoare pentru a verifica dacă un cuvânt conține puncție de separare de propoziție
+        const hasPunctuation = (wordEl) => /[.,!?;:]/.test(wordEl.innerText);
+
+        // 1. DACA S-A APĂSAT PE O PARTICULĂ SEPARABILĂ
+        if (SEPARABLE_PREFIXES.includes(cleanWordLower)) {
+            // Verifică dacă este folosită ca prepoziție (urmată de alt cuvânt în aceeași clauză)
+            let isPreposition = false;
+            if (currentIndex < allWords.length - 1 && !hasPunctuation(el)) {
+                let nextWordRaw = allWords[currentIndex + 1].innerText.replace(/[.,!?;:()"'„“»«]/g, '').trim();
+                if (nextWordRaw.length > 0) {
+                    isPreposition = true; // Este urmată de un cuvânt, deci e mai probabil prepoziție
+                }
+            }
+
+            if (!isPreposition) {
+                // Caută verbul asociat înapoi, dar OPREȘTE-TE la prima virgulă/puncție
+                for (let i = currentIndex - 1; i >= 0; i--) {
+                    if (hasPunctuation(allWords[i])) break; // Am ieșit din clauză
+                    
+                    let prevWord = allWords[i].innerText.replace(/[.,!?;:()"'„“»«]/g, '').trim();
+                    let prevLower = prevWord.toLowerCase();
+
+                    if (prevWord.length > 2 && !SEPARABLE_PREFIXES.includes(prevLower) && /(t|en|st|te|ten)$/i.test(prevLower)) {
+                        pairedElement = allWords[i];
+                        queryText = `${rawWord} ${prevWord}`;
+                        break;
+                    }
+                }
+            }
+        } 
+        // 2. DACA S-A APĂSAT PE UN VERB
+        else if (isVerbLike) {
+            // Caută o particulă înainte de următoarea virgulă/puncție
+            for (let i = currentIndex + 1; i < allWords.length; i++) {
+                let currentWordEl = allWords[i];
+                let nextWordLower = currentWordEl.innerText.replace(/[.,!?;:()"'„“»«]/g, '').trim().toLowerCase();
+
+                // Dacă întâlnim alt verb între timp, ne oprim (particula nu îi aparține)
+                if (nextWordLower.length > 2 && !SEPARABLE_PREFIXES.includes(nextWordLower) && /(t|en|st|te|ten)$/i.test(nextWordLower)) {
+                    break;
+                }
+
+                if (SEPARABLE_PREFIXES.includes(nextWordLower)) {
+                    // Verifică dacă particula e la finalul clauzei (urmată de puncție sau e ultimul cuvânt)
+                    let isAtClauseEnd = (i === allWords.length - 1) || hasPunctuation(currentWordEl);
+                    if (isAtClauseEnd) {
+                        pairedElement = currentWordEl;
+                        let prefixText = currentWordEl.innerText.replace(/[.,!?;:()"'„“»«]/g, '').trim();
+                        queryText = `${prefixText} ${rawWord}`;
+                        break;
+                    }
+                }
+
+                if (hasPunctuation(currentWordEl)) break; // Am ieșit din clauză
+            }
+        }
+
         el.classList.add('highlight-green');
-        let w = el.innerText.replace(/[.,!?;:()]/g, '');
+        if (pairedElement) {
+            pairedElement.classList.add('highlight-green');
+        }
+
         try {
-            let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${encodeURIComponent(w)}`);
-            let data = await res.json(); document.getElementById('trans-box').innerText = data[0][0][0];
-        } catch(e) { document.getElementById('trans-box').innerText = "Eroare"; }
+            let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=de&tl=ro&dt=t&q=${encodeURIComponent(queryText)}`);
+            if(res.ok) {
+                let data = await res.json();
+                if(data && data[0] && data[0][0] && data[0][0][0]) {
+                    transBox.innerText = data[0][0][0];
+                    return;
+                }
+            }
+        } catch(e) {}
+
+        try {
+            let res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(queryText)}&langpair=de|ro`);
+            if(res.ok) {
+                let data = await res.json();
+                if(data && data.responseData && data.responseData.translatedText) {
+                    transBox.innerText = data.responseData.translatedText;
+                    return;
+                }
+            }
+        } catch(e) {}
+
+        try {
+            let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${encodeURIComponent(queryText)}`);
+            if(res.ok) {
+                let data = await res.json();
+                if(data && data[0] && data[0][0] && data[0][0][0]) {
+                    transBox.innerText = data[0][0][0];
+                    return;
+                }
+            }
+        } catch(e) {}
+
+        transBox.innerText = "Eroare traducere";
     }
 
     function saveData() { 
