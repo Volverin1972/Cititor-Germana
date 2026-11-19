@@ -90,7 +90,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        #reader-display { line-height: 1.75; font-size: var(--f-size-read); min-height: 120px; }
+        #reader-display { line-height: 1.75; font-size: var(--f-size-read); min-height: 120px; user-select: text; -webkit-user-select: text; }
         .word {
             cursor: pointer; padding: 0 3px; border-radius: 5px;
             display: inline-block; transition: 0.15s; position: relative; z-index: 10;
@@ -387,7 +387,8 @@
             <button class="btn-circle" onclick="stopAudio()" title="Stop">⏹️</button>
         </div>
         <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
-        <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+            <span id="saved-sel-preview" style="font-size:12px; color:var(--text-muted);"></span>
             <button class="lvl-btn btn-sm" style="background:#0d6efd; padding:7px 12px; font-size:13px;" onclick="translateSelectionWithAI()">🤖 Tradu textul selectat</button>
         </div>
         <div id="reader-display"></div>
@@ -650,6 +651,18 @@
     let historyIdx = -1;
     let isApplyingState = false;
     const aiTransCache = new Map();
+    let lastSavedSelection = '';
+
+    document.addEventListener('selectionchange', () => {
+        const sel = (window.getSelection()?.toString() || '').trim();
+        if (sel.length > 0) {
+            lastSavedSelection = sel;
+            const prevEl = document.getElementById('saved-sel-preview');
+            if (prevEl) {
+                prevEl.textContent = `Selectat: „${sel.slice(0, 42)}${sel.length > 42 ? '…' : ''}”`;
+            }
+        }
+    });
 
     function escHtml(str) {
         return String(str ?? '')
@@ -1287,6 +1300,9 @@ ${letter}
     function startWork(l, idx) {
         let item = db[l][idx];
         if (!item) return;
+        lastSavedSelection = '';
+        const prevEl = document.getElementById('saved-sel-preview');
+        if (prevEl) prevEl.textContent = '';
         hideAllScreens();
         document.getElementById('work-screen').classList.remove('hidden');
         document.getElementById('btn-back-main').classList.remove('hidden');
@@ -1479,7 +1495,7 @@ ${letter}
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     function stopAudio() { synth.cancel(); }
     function playAll() { synth.cancel(); let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function playSelect() { let t = window.getSelection().toString(); if (!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
+    function playSelect() { let t = (window.getSelection()?.toString() || '').trim() || lastSavedSelection; if (!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
     function pauseAudio() { synth.pause(); }
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(event, this)">${escHtml(w)}</span>`).join(' '); }
 
@@ -1489,7 +1505,7 @@ ${letter}
 
         const prompt = `Tradu din germană în română expresia/cuvântul "${targetText}" ținând cont de contextul: "${fullContext}".
 Răspunde foarte scurt, pe un singur rând, în formatul:
-traducere în română (forma de bază / scurtă notă gramaticală dacă e utilă, max 6 cuvinte).`;
+traducere în română (forma de bază / scurtă notă gramaticală dacă e utilă, max 8 cuvinte).`;
 
         const result = await callGemini(prompt);
         aiTransCache.set(cacheKey, result);
@@ -1497,7 +1513,8 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
     }
 
     async function translateSelectionWithAI() {
-        const selected = window.getSelection().toString().trim();
+        const currentSel = (window.getSelection()?.toString() || '').trim();
+        const selected = currentSel || lastSavedSelection;
         const transBox = document.getElementById('trans-box');
         if (!selected) {
             transBox.innerText = 'Selectează mai întâi un fragment de text cu degetul/mouse-ul.';
@@ -1507,8 +1524,8 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
             transBox.innerText = 'Setează cheia Gemini API în ⚙️ pentru traducerea expresiilor cu AI.';
             return;
         }
-        const context = document.getElementById('reader-display').innerText.slice(0, 300);
-        transBox.innerText = '🤖 Se traduce expresia...';
+        const context = document.getElementById('reader-display').innerText.slice(0, 320);
+        transBox.innerText = '🤖 Se traduce selecția...';
         try {
             const out = await translateWithAIContext(selected, context);
             transBox.innerText = `🤖 ${out}`;
@@ -1519,6 +1536,9 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
 
     async function trans(ev, el) {
         if (ev) ev.stopPropagation();
+        const activeSel = (window.getSelection()?.toString() || '').trim();
+        if (activeSel.length > 1) return;
+
         document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
         el.classList.add('highlight-green');
 
@@ -1528,7 +1548,6 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
         let transBox = document.getElementById('trans-box');
         transBox.innerText = 'Se traduce...';
 
-        // 1. Dacă utilizatorul a activat AI-ul și are cheie Gemini, traduce în context
         if (geminiApiKey && config.aiTrans !== false) {
             try {
                 const parentText = (el.parentElement?.innerText || document.getElementById('reader-display').innerText || '').slice(0, 260);
@@ -1540,7 +1559,6 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
             } catch (e) {}
         }
 
-        // 2. Fallback-uri clasice rapide
         try {
             let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=de&tl=ro&dt=t&q=${encodeURIComponent(rawWord)}`);
             if (res.ok) {
@@ -1591,7 +1609,6 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
     }
 
     function doExport() {
-        // Cheia API NU se exportă în backup-ul public, pentru siguranță
         let blob = new Blob([JSON.stringify({ db, letters, config })], { type: 'application/json' });
         let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
