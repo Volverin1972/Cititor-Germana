@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Germana Master Hub</title>
+    <title>Germana Master Hub + AI</title>
     <style>
         :root { 
             --bg-app: #f0f2f5;
             --bg-card: #ffffff; 
             --f-size-read: 22px;
-            --f-size-trans: 18px;
+            --f-size-trans: 17px;
             --main-green: #28a745;
             --main-green-dark: #1e7e34;
             --soft-green: #e9f7ef;
@@ -68,6 +68,7 @@
             background: #6c757d; box-shadow: 0 4px 0 #4a5157;
         }
         .lvl-btn:active { transform: translateY(3px); box-shadow: none; }
+        .lvl-btn:disabled { opacity: 0.6; cursor: wait; }
         .active-lvl { background: var(--main-green) !important; box-shadow: 0 4px 0 var(--main-green-dark) !important; }
         .btn-sm { padding: 10px 14px; font-size: 14px; border-radius: 11px; }
 
@@ -79,7 +80,7 @@
 
         .audio-bar {
             position: sticky; top: 70px; background: var(--bg-card); z-index: 900;
-            display: flex; justify-content: center; gap: 18px; padding: 10px;
+            display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; padding: 10px;
             border-bottom: 2px solid #eee; margin: -20px -20px 18px -20px;
             border-radius: 18px 18px 0 0;
         }
@@ -103,7 +104,7 @@
             position: sticky; top: 135px; z-index: 850; min-height: 48px;
             background: var(--soft-green); color: #155724; font-weight: bold;
             font-size: var(--f-size-trans); text-align: center; margin-bottom: 14px;
-            padding: 10px; border-radius: 10px; border-left: 5px solid var(--main-green);
+            padding: 10px 12px; border-radius: 10px; border-left: 5px solid var(--main-green);
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
@@ -192,6 +193,42 @@
         .check-ok { background: #e9f7ef; border-color: #28a745; color: #155724; }
         .check-warn { background: #fff8e6; border-color: #ffc107; color: #664d03; }
 
+        .ai-feedback-box {
+            margin-top: 16px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid #0d6efd;
+            border-radius: 14px;
+            padding: 16px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+        .ai-score-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .ai-pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13px;
+            background: #e0f2fe;
+            color: #075985;
+        }
+        .ai-pill.pass { background: #dcfce7; color: #166534; }
+        .ai-pill.fail { background: #fee2e2; color: #991b1b; }
+        .ai-corrected {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            white-space: pre-line;
+            margin-top: 8px;
+            font-size: 15px;
+        }
+
         .side-panel {
             position: fixed; top: 0; right: 0; width: 86%; max-width: 430px; height: 100%;
             background: white; z-index: 2000; padding: 18px;
@@ -226,18 +263,18 @@
 
         <div class="hub-cards">
             <div class="hub-card" onclick="openLettersHub()">
-                <span class="hub-badge">B1 • Ghidat + Liber + Imagini</span>
+                <span class="hub-badge">B1 • Ghidat + Evaluare AI</span>
                 <h2 style="margin:0 0 6px 0;">✉️ Scrisori B1</h2>
                 <p style="margin:0; color:var(--text-muted); font-size:14px;">
-                    Lecții ghidate pas cu pas, rubrică de scriere liberă pentru corectare B1, imagini și lecții adăugabile.
+                    Lecții ghidate pas cu pas, imagini și rubrică de scriere liberă cu notă și corectare AI.
                 </p>
             </div>
 
             <div class="hub-card" onclick="openLevelsHome()">
-                <span class="hub-badge">A1–C2 • Audio + Traducere</span>
+                <span class="hub-badge">A1–C2 • Audio + Traducere AI</span>
                 <h2 style="margin:0 0 6px 0;">📚 Lecturi & Teste</h2>
                 <p style="margin:0; color:var(--text-muted); font-size:14px;">
-                    Texte cu sinteză vocală, traducere la atingerea cuvintelor și teste inteligente cu reluare greșeli.
+                    Texte cu sinteză vocală, traducere în context și teste inteligente cu reluare greșeli.
                 </p>
             </div>
         </div>
@@ -255,12 +292,12 @@
         </div>
     </div>
 
-    <!-- ECRAN SCRISORI B1: LISTA + RUBRICĂ SCRIERE LIBERĂ -->
+    <!-- ECRAN SCRISORI B1: LISTA -->
     <section id="letters-list-screen" class="card hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
             <h2 style="margin:0;">Lecții Scrisori B1</h2>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="lvl-btn active-lvl btn-sm" onclick="openFreeWriting()">✍️ Scriere liberă</button>
+                <button class="lvl-btn active-lvl btn-sm" onclick="openFreeWriting()">✍️ Scriere liberă + AI</button>
                 <button class="lvl-btn btn-sm" style="background:#007bff;" onclick="openAddLetterPanel()">➕ Adaugă lecție</button>
             </div>
         </div>
@@ -275,13 +312,13 @@
         <button class="lvl-btn btn-sm" style="width:100%; margin-top:14px; background:#6c757d;" onclick="goHome()">🏠 Acasă</button>
     </section>
 
-    <!-- ECRAN SCRISORI B1: SCRIERE LIBERĂ & PREGĂTIRE CORECTARE -->
+    <!-- ECRAN SCRISORI B1: SCRIERE LIBERĂ + EVALUARE AI -->
     <section id="letters-free-screen" class="card hidden">
         <button class="lvl-btn btn-sm" style="background:#6c757d; margin-bottom:12px;" onclick="openLettersHub()">⬅️ Înapoi la scrisori</button>
-        <span class="hub-badge">Atelier Liber • Pregătire Evaluare B1</span>
+        <span class="hub-badge">Atelier Liber • Evaluare B1 în aplicație</span>
         <h2 style="margin:4px 0 6px 0;">✍️ Scrie scrisoarea ta în germană</h2>
         <p style="color:var(--text-muted); margin:0 0 12px 0; font-size:14px;">
-            Scrie scrisoarea așa cum știi. Verifici structura de bază aici și apeși „Copiază pentru corectare B1” ca să primești notă estimativă, greșelile și verdictul dacă este suficient pentru B1.
+            Scrie scrisoarea așa cum știi, apoi apasă <b>Evaluează cu AI</b> pentru notă estimativă, greșeli explicate și verdict B1.
         </p>
 
         <label style="font-weight:700; font-size:13px; display:block; margin-bottom:4px;">Tema / Cerința (opțional)</label>
@@ -299,9 +336,12 @@
         <div id="free-status" style="font-size:13px; font-weight:600; color:var(--main-green-dark); margin-top:10px; min-height:18px;"></div>
 
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="lvl-btn active-lvl btn-sm" onclick="copyForB1Grading()">📋 Copiază pentru corectare B1</button>
-            <button class="lvl-btn btn-sm" style="background:#6c757d;" onclick="clearFreeLetter()">🗑️ Șterge textul</button>
+            <button id="btn-ai-grade" class="lvl-btn active-lvl btn-sm" onclick="gradeLetterWithAI()">🤖 Evaluează cu AI</button>
+            <button class="lvl-btn btn-sm" style="background:#007bff;" onclick="copyForB1Grading()">📋 Copiază prompt</button>
+            <button class="lvl-btn btn-sm" style="background:#6c757d;" onclick="clearFreeLetter()">🗑️ Șterge</button>
         </div>
+
+        <div id="ai-grade-result" class="ai-feedback-box hidden"></div>
     </section>
 
     <!-- ECRAN SCRISORI B1: LUCRU GHIDAT -->
@@ -341,12 +381,15 @@
     <!-- ECRAN LUCRU LECTURI & TESTE -->
     <div id="work-screen" class="card hidden">
         <div id="audio-ui" class="audio-bar hidden">
-            <button class="btn-circle" onclick="playAll()">▶️</button>
-            <button class="btn-circle" onclick="playSelect()">🎯</button>
-            <button class="btn-circle" onclick="pauseAudio()">⏸️</button>
-            <button class="btn-circle" onclick="stopAudio()">⏹️</button>
+            <button class="btn-circle" onclick="playAll()" title="Redă tot">▶️</button>
+            <button class="btn-circle" onclick="playSelect()" title="Redă selecția">🎯</button>
+            <button class="btn-circle" onclick="pauseAudio()" title="Pauză">⏸️</button>
+            <button class="btn-circle" onclick="stopAudio()" title="Stop">⏹️</button>
         </div>
         <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
+        <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+            <button class="lvl-btn btn-sm" style="background:#0d6efd; padding:7px 12px; font-size:13px;" onclick="translateSelectionWithAI()">🤖 Tradu textul selectat</button>
+        </div>
         <div id="reader-display"></div>
         <div id="expl-container"></div>
         <div id="test-ui" class="hidden" style="margin-top:20px;"></div>
@@ -365,7 +408,17 @@
 
 <!-- PANOU LATERAL SETĂRI & ADĂUGARE -->
 <div id="set-panel" class="side-panel">
-    <h3>⚙️ Setări & Backup</h3>
+    <h3>🤖 Setări AI (Corectare & Traducere)</h3>
+    <label>Cheie Gemini API (stocată doar în browserul tău):</label>
+    <input type="password" id="cfg-api-key" placeholder="AIza..." onchange="saveApiKey()">
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+        <input type="checkbox" id="cfg-ai-trans" style="width:18px; height:18px;" onchange="applyCfg()">
+        <span style="font-size:13px; font-weight:600;">Folosește AI la traducerea cuvintelor (în context)</span>
+    </div>
+    <div id="api-key-status" style="font-size:12px; color:var(--main-green-dark); margin-top:4px; font-weight:600;"></div>
+
+    <hr>
+    <h3>⚙️ Aspect & Audio</h3>
     <label>Culoare Fundal:</label><input type="color" id="cfg-bg" onchange="applyCfg()">
     <label>Font Lectură / Scrisori: <span id="val-f1">22</span>px</label><input type="range" id="cfg-f1" min="15" max="36" value="22" oninput="applyCfg()">
     <label>Viteză Voce:</label><input type="range" id="cfg-rate" min="0.4" max="1.6" step="0.1" value="1" onchange="applyCfg()">
@@ -407,6 +460,8 @@
 </div>
 
 <script>
+    const GEMINI_MODEL = 'gemini-2.5-flash';
+
     const DEFAULT_LETTERS = [
         {
             id: "termin-verschieben-sie",
@@ -580,7 +635,8 @@
 
     let db = JSON.parse(localStorage.getItem('gm_db_v3') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
     let letters = JSON.parse(localStorage.getItem('gm_letters_v1') || 'null') || DEFAULT_LETTERS;
-    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"22","rate":"1"}');
+    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"22","rate":"1","aiTrans":true}');
+    let geminiApiKey = localStorage.getItem('gm_gemini_key') || '';
 
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
     let lastRawBody = '', lastSetSize = 10, lastShuffle = true;
@@ -593,6 +649,7 @@
     let appHistory = [];
     let historyIdx = -1;
     let isApplyingState = false;
+    const aiTransCache = new Map();
 
     function escHtml(str) {
         return String(str ?? '')
@@ -606,6 +663,48 @@
         return String(str ?? '')
             .replace(/\\/g, '\\\\')
             .replace(/'/g, "\\'");
+    }
+
+    async function callGemini(promptText, jsonSchema = null) {
+        if (!geminiApiKey) {
+            throw new Error('NO_API_KEY');
+        }
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+        const body = {
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+                temperature: 0.2
+            }
+        };
+        if (jsonSchema) {
+            body.generationConfig.responseMimeType = 'application/json';
+            body.generationConfig.responseSchema = jsonSchema;
+        }
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+            const errTxt = await res.text();
+            throw new Error(`API_ERROR_${res.status}: ${errTxt}`);
+        }
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return text.trim();
+    }
+
+    function saveApiKey() {
+        geminiApiKey = document.getElementById('cfg-api-key').value.trim();
+        if (geminiApiKey) {
+            localStorage.setItem('gm_gemini_key', geminiApiKey);
+            document.getElementById('api-key-status').textContent = '✓ Cheie Gemini API salvată local.';
+        } else {
+            localStorage.removeItem('gm_gemini_key');
+            document.getElementById('api-key-status').textContent = 'Cheia API a fost ștearsă.';
+        }
     }
 
     function hideAllScreens() {
@@ -744,6 +843,98 @@
         }
     }
 
+    async function gradeLetterWithAI() {
+        const topic = (document.getElementById('free-topic')?.value || '').trim();
+        const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
+        const letter = (document.getElementById('free-letter-text')?.value || '').trim();
+        const resultBox = document.getElementById('ai-grade-result');
+        const btn = document.getElementById('btn-ai-grade');
+
+        if (!letter) {
+            alert('Scrie mai întâi textul scrisorii.');
+            return;
+        }
+        if (!geminiApiKey) {
+            alert('Introdu mai întâi cheia Gemini API în Setări (⚙️) pentru evaluarea directă.');
+            toggleSet();
+            document.getElementById('cfg-api-key').focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Se evaluează...';
+        resultBox.classList.remove('hidden');
+        resultBox.innerHTML = 'Se analizează scrisoarea pentru nivelul B1...';
+
+        const prompt = `Ești un examinator de limba germană (nivel B1, Goethe/telc). Evaluează scrisoarea de mai jos și răspunde în limba română.
+Tema: ${topic || 'nespecificată (evaluare generală)'}
+Registru dorit: ${reg}
+
+Scrisoarea elevului:
+"""
+${letter}
+"""`;
+
+        const schema = {
+            type: 'OBJECT',
+            properties: {
+                nota_estimativa: { type: 'STRING', description: 'Notă orientativă din 10, ex: 7.5 / 10' },
+                nivel_estimat: { type: 'STRING', description: 'Ex: B1 solid, B1 la limită, A2 spre B1' },
+                trece_b1: { type: 'BOOLEAN', description: 'true dacă scrisoarea este suficientă pentru promovarea părții de scriere la B1' },
+                verdict_pe_scurt: { type: 'STRING', description: '1-2 propoziții clare despre punctele forte și ce lipsește' },
+                greseli: {
+                    type: 'ARRAY',
+                    items: {
+                        type: 'OBJECT',
+                        properties: {
+                            fragment_gresit: { type: 'STRING' },
+                            varianta_corecta: { type: 'STRING' },
+                            explicatie_ro: { type: 'STRING' }
+                        },
+                        required: ['fragment_gresit', 'varianta_corecta', 'explicatie_ro']
+                    }
+                },
+                scrisoare_corectata: { type: 'STRING', description: 'Varianta completă corectată și naturală la nivel B1' }
+            },
+            required: ['nota_estimativa', 'nivel_estimat', 'trece_b1', 'verdict_pe_scurt', 'greseli', 'scrisoare_corectata']
+        };
+
+        try {
+            const raw = await callGemini(prompt, schema);
+            const data = JSON.parse(raw);
+
+            const mistakesHtml = (data.greseli && data.greseli.length)
+                ? `<ul style="margin:8px 0 12px 18px; padding:0;">${data.greseli.map(g => `
+                    <li style="margin-bottom:8px;">
+                        <span style="color:#b91c1c; text-decoration:line-through;">${escHtml(g.fragment_gresit)}</span>
+                        → <strong style="color:#15803d;">${escHtml(g.varianta_corecta)}</strong><br>
+                        <span style="font-size:13px; color:#475569;">${escHtml(g.explicatie_ro)}</span>
+                    </li>
+                `).join('')}</ul>`
+                : '<p style="color:#15803d; font-weight:600;">Nu au fost găsite greșeli majore!</p>';
+
+            resultBox.innerHTML = `
+                <div class="ai-score-row">
+                    <span class="ai-pill">Notă estimativă: ${escHtml(data.nota_estimativa)}</span>
+                    <span class="ai-pill">Nivel: ${escHtml(data.nivel_estimat)}</span>
+                    <span class="ai-pill ${data.trece_b1 ? 'pass' : 'fail'}">
+                        ${data.trece_b1 ? '✓ Suficient pentru B1' : '✕ Mai necesită exercițiu pentru B1'}
+                    </span>
+                </div>
+                <p style="margin:0 0 10px 0;"><strong>Verdict:</strong> ${escHtml(data.verdict_pe_scurt)}</p>
+                <strong>Greșeli și corecții:</strong>
+                ${mistakesHtml}
+                <strong>Varianta corectată (B1):</strong>
+                <div class="ai-corrected">${escHtml(data.scrisoare_corectata)}</div>
+            `;
+        } catch (err) {
+            resultBox.innerHTML = `<span style="color:#b91c1c; font-weight:600;">Eroare la evaluarea AI: ${escHtml(err.message)}. Verifică cheia API din Setări (⚙️) sau conexiunea la internet.</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🤖 Evaluează cu AI';
+        }
+    }
+
     async function copyForB1Grading() {
         const topic = (document.getElementById('free-topic')?.value || '').trim();
         const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
@@ -771,7 +962,7 @@
 
         try {
             await navigator.clipboard.writeText(prompt);
-            statusEl.textContent = '✓ Promptul + scrisoarea au fost copiate. Lipește-le în chat pentru corectare B1!';
+            statusEl.textContent = '✓ Promptul + scrisoarea au fost copiate.';
         } catch {
             const ta = document.createElement('textarea');
             ta.value = prompt;
@@ -787,6 +978,7 @@
         if (!confirm('Ștergi scrisoarea scrisă?')) return;
         document.getElementById('free-letter-text').value = '';
         document.getElementById('free-status').textContent = '';
+        document.getElementById('ai-grade-result').classList.add('hidden');
         analyzeFreeLetter();
     }
 
@@ -1039,6 +1231,11 @@
         document.getElementById('cfg-bg').value = config.bg;
         document.getElementById('cfg-f1').value = config.font;
         document.getElementById('cfg-rate').value = config.rate;
+        document.getElementById('cfg-ai-trans').checked = config.aiTrans !== false;
+        document.getElementById('cfg-api-key').value = geminiApiKey;
+        if (geminiApiKey) {
+            document.getElementById('api-key-status').textContent = '✓ Cheie Gemini API activă.';
+        }
         applyCfg(false);
     }
 
@@ -1046,6 +1243,7 @@
         config.bg = document.getElementById('cfg-bg').value;
         config.font = document.getElementById('cfg-f1').value;
         config.rate = document.getElementById('cfg-rate').value;
+        config.aiTrans = document.getElementById('cfg-ai-trans').checked;
         document.getElementById('val-f1').innerText = config.font;
         document.body.style.background = config.bg;
         document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
@@ -1285,6 +1483,40 @@
     function pauseAudio() { synth.pause(); }
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(event, this)">${escHtml(w)}</span>`).join(' '); }
 
+    async function translateWithAIContext(targetText, fullContext) {
+        const cacheKey = `${targetText}::${fullContext.slice(0, 140)}`;
+        if (aiTransCache.has(cacheKey)) return aiTransCache.get(cacheKey);
+
+        const prompt = `Tradu din germană în română expresia/cuvântul "${targetText}" ținând cont de contextul: "${fullContext}".
+Răspunde foarte scurt, pe un singur rând, în formatul:
+traducere în română (forma de bază / scurtă notă gramaticală dacă e utilă, max 6 cuvinte).`;
+
+        const result = await callGemini(prompt);
+        aiTransCache.set(cacheKey, result);
+        return result;
+    }
+
+    async function translateSelectionWithAI() {
+        const selected = window.getSelection().toString().trim();
+        const transBox = document.getElementById('trans-box');
+        if (!selected) {
+            transBox.innerText = 'Selectează mai întâi un fragment de text cu degetul/mouse-ul.';
+            return;
+        }
+        if (!geminiApiKey) {
+            transBox.innerText = 'Setează cheia Gemini API în ⚙️ pentru traducerea expresiilor cu AI.';
+            return;
+        }
+        const context = document.getElementById('reader-display').innerText.slice(0, 300);
+        transBox.innerText = '🤖 Se traduce expresia...';
+        try {
+            const out = await translateWithAIContext(selected, context);
+            transBox.innerText = `🤖 ${out}`;
+        } catch {
+            transBox.innerText = 'Eroare la traducerea AI.';
+        }
+    }
+
     async function trans(ev, el) {
         if (ev) ev.stopPropagation();
         document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
@@ -1296,6 +1528,19 @@
         let transBox = document.getElementById('trans-box');
         transBox.innerText = 'Se traduce...';
 
+        // 1. Dacă utilizatorul a activat AI-ul și are cheie Gemini, traduce în context
+        if (geminiApiKey && config.aiTrans !== false) {
+            try {
+                const parentText = (el.parentElement?.innerText || document.getElementById('reader-display').innerText || '').slice(0, 260);
+                const aiOut = await translateWithAIContext(rawWord, parentText);
+                if (aiOut) {
+                    transBox.innerText = `🤖 ${aiOut}`;
+                    return;
+                }
+            } catch (e) {}
+        }
+
+        // 2. Fallback-uri clasice rapide
         try {
             let res = await fetch(`https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=de&tl=ro&dt=t&q=${encodeURIComponent(rawWord)}`);
             if (res.ok) {
@@ -1346,6 +1591,7 @@
     }
 
     function doExport() {
+        // Cheia API NU se exportă în backup-ul public, pentru siguranță
         let blob = new Blob([JSON.stringify({ db, letters, config })], { type: 'application/json' });
         let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
