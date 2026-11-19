@@ -172,6 +172,26 @@
             line-height: 1.65; font-size: var(--f-size-read); margin-top: 10px;
         }
 
+        .free-textarea {
+            width: 100%; min-height: 180px; padding: 14px; border-radius: 12px;
+            border: 2px solid var(--border); font-size: 16px; line-height: 1.6;
+            font-family: inherit; resize: vertical;
+        }
+        .free-textarea:focus { outline: none; border-color: var(--main-green); }
+
+        .check-grid {
+            display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px;
+        }
+        @media (min-width: 600px) {
+            .check-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .check-item {
+            background: #f8f9fa; border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600;
+        }
+        .check-ok { background: #e9f7ef; border-color: #28a745; color: #155724; }
+        .check-warn { background: #fff8e6; border-color: #ffc107; color: #664d03; }
+
         .side-panel {
             position: fixed; top: 0; right: 0; width: 86%; max-width: 430px; height: 100%;
             background: white; z-index: 2000; padding: 18px;
@@ -206,10 +226,10 @@
 
         <div class="hub-cards">
             <div class="hub-card" onclick="openLettersHub()">
-                <span class="hub-badge">B1 • Ghidat + Imagini</span>
+                <span class="hub-badge">B1 • Ghidat + Liber + Imagini</span>
                 <h2 style="margin:0 0 6px 0;">✉️ Scrisori B1</h2>
                 <p style="margin:0; color:var(--text-muted); font-size:14px;">
-                    Construiești scrisori formale și informale pas cu pas, cu suport de imagini și lecții adăugabile.
+                    Lecții ghidate pas cu pas, rubrică de scriere liberă pentru corectare B1, imagini și lecții adăugabile.
                 </p>
             </div>
 
@@ -235,11 +255,14 @@
         </div>
     </div>
 
-    <!-- ECRAN SCRISORI B1: LISTA -->
+    <!-- ECRAN SCRISORI B1: LISTA + RUBRICĂ SCRIERE LIBERĂ -->
     <section id="letters-list-screen" class="card hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
             <h2 style="margin:0;">Lecții Scrisori B1</h2>
-            <button class="lvl-btn active-lvl btn-sm" onclick="openAddLetterPanel()">➕ Adaugă lecție</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="lvl-btn active-lvl btn-sm" onclick="openFreeWriting()">✍️ Scriere liberă</button>
+                <button class="lvl-btn btn-sm" style="background:#007bff;" onclick="openAddLetterPanel()">➕ Adaugă lecție</button>
+            </div>
         </div>
 
         <div class="filters">
@@ -252,7 +275,36 @@
         <button class="lvl-btn btn-sm" style="width:100%; margin-top:14px; background:#6c757d;" onclick="goHome()">🏠 Acasă</button>
     </section>
 
-    <!-- ECRAN SCRISORI B1: LUCRU -->
+    <!-- ECRAN SCRISORI B1: SCRIERE LIBERĂ & PREGĂTIRE CORECTARE -->
+    <section id="letters-free-screen" class="card hidden">
+        <button class="lvl-btn btn-sm" style="background:#6c757d; margin-bottom:12px;" onclick="openLettersHub()">⬅️ Înapoi la scrisori</button>
+        <span class="hub-badge">Atelier Liber • Pregătire Evaluare B1</span>
+        <h2 style="margin:4px 0 6px 0;">✍️ Scrie scrisoarea ta în germană</h2>
+        <p style="color:var(--text-muted); margin:0 0 12px 0; font-size:14px;">
+            Scrie scrisoarea așa cum știi. Verifici structura de bază aici și apeși „Copiază pentru corectare B1” ca să primești notă estimativă, greșelile și verdictul dacă este suficient pentru B1.
+        </p>
+
+        <label style="font-weight:700; font-size:13px; display:block; margin-bottom:4px;">Tema / Cerința (opțional)</label>
+        <input id="free-topic" type="text" placeholder="Ex: Amânarea unei programări la medic / Reclamație colet întârziat" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; font-size:14px;">
+
+        <label style="font-weight:700; font-size:13px; display:block; margin-bottom:4px;">Registru vizat</label>
+        <select id="free-register" onchange="analyzeFreeLetter()" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:12px; font-size:14px;">
+            <option value="Formal (Sie)">Formal (Sie)</option>
+            <option value="Informal (du)">Informal (du)</option>
+        </select>
+
+        <textarea id="free-letter-text" class="free-textarea" oninput="analyzeFreeLetter()" placeholder="Sehr geehrte Damen und Herren,&#10;&#10;leider muss ich meinen Termin verschieben...&#10;&#10;Mit freundlichen Grüßen&#10;Numele tău"></textarea>
+
+        <div id="free-checks" class="check-grid"></div>
+        <div id="free-status" style="font-size:13px; font-weight:600; color:var(--main-green-dark); margin-top:10px; min-height:18px;"></div>
+
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="lvl-btn active-lvl btn-sm" onclick="copyForB1Grading()">📋 Copiază pentru corectare B1</button>
+            <button class="lvl-btn btn-sm" style="background:#6c757d;" onclick="clearFreeLetter()">🗑️ Șterge textul</button>
+        </div>
+    </section>
+
+    <!-- ECRAN SCRISORI B1: LUCRU GHIDAT -->
     <section id="letters-work-screen" class="card hidden">
         <button class="lvl-btn btn-sm" style="background:#6c757d; margin-bottom:12px;" onclick="openLettersHub()">⬅️ Înapoi la scrisori</button>
         <div>
@@ -557,7 +609,7 @@
     }
 
     function hideAllScreens() {
-        ['home-screen', 'letters-list-screen', 'letters-work-screen', 'lvl-screen', 'work-screen']
+        ['home-screen', 'letters-list-screen', 'letters-free-screen', 'letters-work-screen', 'lvl-screen', 'work-screen']
             .forEach(id => document.getElementById(id).classList.add('hidden'));
     }
 
@@ -606,6 +658,8 @@
 
         if (state.screenId === 'letters-list-screen') {
             renderLettersList();
+        } else if (state.screenId === 'letters-free-screen') {
+            analyzeFreeLetter();
         } else if (state.screenId === 'letters-work-screen' && state.letterId) {
             openLetterLesson(state.letterId, true);
         } else if (state.screenId === 'lvl-screen') {
@@ -626,6 +680,7 @@
     window.onload = () => {
         loadCfg();
         checkResume();
+        analyzeFreeLetter();
         saveState('home-screen', 'GERMANA MASTER');
     };
 
@@ -650,6 +705,89 @@
         document.getElementById('nav-title').innerText = 'Scrisori B1';
         renderLettersList();
         saveState('letters-list-screen', 'Scrisori B1');
+    }
+
+    function openFreeWriting() {
+        stopAudio();
+        hideAllScreens();
+        document.getElementById('letters-free-screen').classList.remove('hidden');
+        document.getElementById('nav-title').innerText = 'Scriere Liberă B1';
+        document.getElementById('free-status').textContent = '';
+        analyzeFreeLetter();
+        saveState('letters-free-screen', 'Scriere Liberă B1');
+    }
+
+    function analyzeFreeLetter() {
+        const txt = (document.getElementById('free-letter-text')?.value || '').trim();
+        const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
+        const words = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
+
+        const hasGreeting = /(sehr geehrte|hallo|liebe|lieber|guten tag|hi)\b/i.test(txt);
+        const hasClosing = /(mit freundlichen grüßen|viele grüße|freundliche grüße|bis bald|tschüss|liebe grüße)/i.test(txt);
+        const usesSie = /\b(sie|ihnen|ihr|ihre|ihren|ihrem)\b/i.test(txt);
+        const usesDu = /\b(du|dir|dich|dein|deine|deinen|deinem)\b/i.test(txt);
+        const registerConsistent = reg === 'Formal (Sie)' ? !(usesDu && !usesSie) : !(usesSie && !usesDu);
+        const lengthOk = words >= 55;
+
+        const checks = [
+            { ok: hasGreeting, label: hasGreeting ? '✓ Salut prezent' : '• Adaugă o formulă de salut' },
+            { ok: hasClosing, label: hasClosing ? '✓ Încheiere prezentă' : '• Adaugă o formulă de încheiere' },
+            { ok: registerConsistent, label: registerConsistent ? `✓ Registru aliniat (${reg})` : '• Atenție la amestecul du / Sie' },
+            { ok: lengthOk, label: `Lungime: ${words} cuvinte (orientativ ≥ 55 pentru B1)` }
+        ];
+
+        const box = document.getElementById('free-checks');
+        if (box) {
+            box.innerHTML = checks.map(c =>
+                `<div class="check-item ${c.ok ? 'check-ok' : 'check-warn'}">${escHtml(c.label)}</div>`
+            ).join('');
+        }
+    }
+
+    async function copyForB1Grading() {
+        const topic = (document.getElementById('free-topic')?.value || '').trim();
+        const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
+        const letter = (document.getElementById('free-letter-text')?.value || '').trim();
+        const statusEl = document.getElementById('free-status');
+
+        if (!letter) {
+            alert('Scrie mai întâi textul scrisorii.');
+            return;
+        }
+
+        const prompt = [
+            'Evaluează următoarea scrisoare în limba germană pentru nivelul B1.',
+            topic ? `Tema/cerința: ${topic}` : 'Tema/cerința: neseparata/liberă',
+            `Registru dorit: ${reg}`,
+            'Te rog să îmi spui:',
+            '1) Ce notă/calificativ estimativ ar primi și ce nivel CEFR reflectă (ex: sub B1, B1 la limită, B1 solid).',
+            '2) Unde este greșit (gramatică, topică, ortografie, registru Sie/du, formulări) și cum se corectează fiecare greșeală.',
+            '3) Dacă este suficient pentru a trece la B1 și ce trebuie îmbunătățit.',
+            '4) Oferă la final o variantă corectată, naturală, de nivel B1.',
+            '',
+            'Scrisoarea mea:',
+            letter
+        ].join('\n');
+
+        try {
+            await navigator.clipboard.writeText(prompt);
+            statusEl.textContent = '✓ Promptul + scrisoarea au fost copiate. Lipește-le în chat pentru corectare B1!';
+        } catch {
+            const ta = document.createElement('textarea');
+            ta.value = prompt;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            statusEl.textContent = '✓ Promptul + scrisoarea au fost copiate.';
+        }
+    }
+
+    function clearFreeLetter() {
+        if (!confirm('Ștergi scrisoarea scrisă?')) return;
+        document.getElementById('free-letter-text').value = '';
+        document.getElementById('free-status').textContent = '';
+        analyzeFreeLetter();
     }
 
     function filterLetters(type, btn) {
