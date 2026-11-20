@@ -226,15 +226,9 @@
         .check-warn { background: #fff8e6; border-color: #ffc107; color: #664d03; }
 
         .ai-eval-box {
-            margin-top: 16px;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-left: 5px solid var(--main-green);
-            border-radius: 12px;
-            padding: 15px;
-            line-height: 1.6;
-            font-size: 15px;
-            white-space: pre-line;
+            margin-top: 14px; background: #f8fafc; border: 1px solid #cbd5e1;
+            border-left: 5px solid var(--main-green); border-radius: 12px;
+            padding: 14px; line-height: 1.6; font-size: 15px; white-space: pre-line;
         }
 
         .side-panel {
@@ -300,7 +294,6 @@
         </div>
     </div>
 
-    <!-- SCRISORI B1: LISTA -->
     <section id="letters-list-screen" class="card hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
             <h2 style="margin:0;">Lecții Scrisori B1</h2>
@@ -320,7 +313,6 @@
         <button class="lvl-btn btn-sm" style="width:100%; margin-top:14px; background:#6c757d;" onclick="goHome()">🏠 Acasă</button>
     </section>
 
-    <!-- SCRISORI B1: LUCRU GHIDAT -->
     <section id="letters-work-screen" class="card hidden">
         <button class="lvl-btn btn-sm" style="background:#6c757d; margin-bottom:12px;" onclick="openLettersHub()">⬅️ Înapoi la scrisori</button>
         <div>
@@ -342,7 +334,6 @@
         </div>
     </section>
 
-    <!-- SCRISORI B1: SCRIERE LIBERĂ -->
     <section id="letters-free-screen" class="card hidden">
         <button class="lvl-btn btn-sm" style="background:#6c757d; margin-bottom:12px;" onclick="openLettersHub()">⬅️ Înapoi la scrisori</button>
         <span class="hub-badge">Atelier Liber B1</span>
@@ -374,7 +365,6 @@
         <div id="free-ai-output" class="ai-eval-box hidden"></div>
     </section>
 
-    <!-- LECTURI & TESTE: LISTA -->
     <div id="lvl-screen" class="card hidden">
         <div style="display:flex; gap:10px; margin-bottom:16px;">
             <button id="tab-btn-L" class="lvl-btn active-lvl" style="flex:1" onclick="switchTab('L')">Lecturi</button>
@@ -384,7 +374,6 @@
         <button class="lvl-btn btn-sm" style="width:100%; margin-top:14px; background:#6c757d;" onclick="goHome()">🏠 Acasă</button>
     </div>
 
-    <!-- LECTURI & TESTE: LUCRU -->
     <div id="work-screen" class="card hidden">
         <div id="audio-ui" class="audio-bar hidden">
             <button class="btn-circle" onclick="playAll()" title="Redă tot">▶️</button>
@@ -597,14 +586,17 @@
     });
 
     function syncFloatingBtn() {
-        const btn = document.getElementById('floating-translate-btn');
-        const workVisible = !document.getElementById('work-screen').classList.contains('hidden');
-        btn.classList.toggle('hidden', !workVisible);
+        try {
+            const btn = document.getElementById('floating-translate-btn');
+            const workVisible = !document.getElementById('work-screen').classList.contains('hidden');
+            btn.classList.toggle('hidden', !workVisible);
+        } catch {}
     }
 
     function hideAllScreens() {
         ['home-screen', 'letters-list-screen', 'letters-work-screen', 'letters-free-screen', 'lvl-screen', 'work-screen'].forEach(id => {
-            document.getElementById(id).classList.add('hidden');
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
         });
         syncFloatingBtn();
     }
@@ -668,10 +660,12 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        loadCfg();
-        checkResume();
-        analyzeFreeLetter();
-        saveState('home-screen', 'GERMANA MASTER');
+        try {
+            loadCfg();
+            checkResume();
+            analyzeFreeLetter();
+            saveState('home-screen', 'GERMANA MASTER');
+        } catch {}
     });
 
     function goHome() {
@@ -730,54 +724,25 @@
 
     async function askGeminiText(prompt) {
         const cleanKey = (geminiKey || '').trim();
-        if (!cleanKey) {
-            throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
-        }
-        const preferred = (config.model || 'gemini-2.5-flash').trim();
-        const models = [...new Set([preferred, 'gemini-2.5-flash', 'gemini-2.0-flash'])];
-        const versions = ['v1beta', 'v1'];
-        let lastErr = null;
-
-        for (const ver of versions) {
-            for (const m of models) {
-                try {
-                    const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: { temperature: 0.2 }
-                        })
-                    });
-                    if (!res.ok) {
-                        let detail = '';
-                        try {
-                            const j = await res.json();
-                            detail = j?.error?.message || '';
-                        } catch {}
-                        const err = new Error(`HTTP ${res.status}${detail ? ': ' + detail : ''}`);
-                        err.status = res.status;
-                        throw err;
-                    }
-                    const data = await res.json();
-                    const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
-                    if (text) {
-                        if (m !== config.model) {
-                            config.model = m;
-                            localStorage.setItem('gm_config', JSON.stringify(config));
-                            const selEl = document.getElementById('cfg-model');
-                            if (selEl) selEl.value = m;
-                        }
-                        return text;
-                    }
-                } catch (e) {
-                    lastErr = e;
-                    if (e.status !== 404) throw e;
-                }
+        if (!cleanKey) throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
+        const m = (config.model || 'gemini-2.5-flash').trim();
+        for (const ver of ['v1beta', 'v1']) {
+            const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.2 }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const out = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+                if (out) return out;
             }
         }
-        throw lastErr || new Error('Nu s-a putut contacta modelul AI.');
+        throw new Error('Răspuns indisponibil de la Gemini AI.');
     }
 
     async function evaluateFreeLetterWithAI() {
@@ -787,14 +752,10 @@
         const outBox = document.getElementById('free-ai-output');
         const btn = document.getElementById('btn-eval-letter-ai');
 
-        if (!letter) {
-            alert('Scrie mai întâi textul scrisorii.');
-            return;
-        }
+        if (!letter) { alert('Scrie mai întâi textul scrisorii.'); return; }
         if (!geminiKey) {
             alert('Adaugă cheia Gemini API în Setări (⚙️) pentru evaluarea cu AI.');
             toggleSet();
-            document.getElementById('cfg-api-key').focus();
             return;
         }
 
@@ -804,24 +765,22 @@
         outBox.textContent = 'Se evaluează scrisoarea pentru nivelul B1...';
 
         const prompt = [
-            'Ești examinator de limba germană (nivel B1). Evaluează scrisoarea de mai jos și răspunde în limba română, clar și structurat.',
-            topic ? `Tema/cerința: ${topic}` : 'Tema/cerința: liberă',
-            `Registru dorit: ${reg}`,
-            'Include exact aceste 4 secțiuni:',
-            '1. Notă estimativă și nivel CEFR (ex. 7.5/10 sau B1 la limită / B1 solid + dacă trece nivelul B1)',
-            '2. Greșeli găsite și cum se corectează (gramatică, topică, ortografie, Sie/du)',
-            '3. Ce mai trebuie îmbunătățit',
-            '4. Varianta corectată în germană (B1)',
+            'Evaluează următoarea scrisoare în germană pentru nivelul B1 și răspunde în română:',
+            topic ? `Tema: ${topic}` : 'Tema: liberă',
+            `Registru: ${reg}`,
+            '1) Notă estimativă și nivel CEFR (dacă este suficient pentru B1)',
+            '2) Greșeli găsite și cum se corectează',
+            '3) Ce mai trebuie îmbunătățit',
+            '4) Varianta corectată la nivel B1',
             '',
             'Scrisoarea:',
             letter
         ].join('\n');
 
         try {
-            const reply = await askGeminiText(prompt);
-            outBox.textContent = reply;
+            outBox.textContent = await askGeminiText(prompt);
         } catch (e) {
-            outBox.textContent = 'Eroare la evaluarea AI: ' + e.message;
+            outBox.textContent = 'Eroare AI: ' + (e?.message || 'necunoscută');
         } finally {
             btn.disabled = false;
             btn.textContent = '🤖 Evaluează cu AI';
@@ -1381,10 +1340,10 @@
     }
 
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
-    function stopAudio() { synth.cancel(); }
-    function playAll() { synth.cancel(); const ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function playSelect() { const t = (window.getSelection()?.toString() || '').trim() || lastSavedSelection; if (!t) return; synth.cancel(); const ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function pauseAudio() { synth.pause(); }
+    function stopAudio() { try { synth.cancel(); } catch {} }
+    function playAll() { try { synth.cancel(); const ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); } catch {} }
+    function playSelect() { try { const t = (window.getSelection()?.toString() || '').trim() || lastSavedSelection; if (!t) return; synth.cancel(); const ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); } catch {} }
+    function pauseAudio() { try { synth.pause(); } catch {} }
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(event, this)">${w}</span>`).join(' '); }
 
     async function fastTranslate(rawText) {
@@ -1440,7 +1399,6 @@
         if (!geminiKey) {
             alert('Adaugă cheia Gemini API în Setări (⚙️) pentru a folosi traducerea cu AI.');
             toggleSet();
-            document.getElementById('cfg-api-key').focus();
             return;
         }
 
@@ -1453,7 +1411,7 @@
             const out = await askGeminiText(prompt);
             box.innerText = `🤖 ${out}`;
         } catch (e) {
-            box.innerText = 'Eroare AI: ' + e.message;
+            box.innerText = 'Eroare AI: ' + (e?.message || 'necunoscută');
         } finally {
             btn.disabled = false;
             btn.textContent = '🤖 Tradu cu AI';
@@ -1522,4 +1480,29 @@
 
     function doImport(input) {
         const file = input.files[0];
-        
+        if (!file) return;
+        const r = new FileReader();
+        r.onload = (e) => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if (d.db) { db = d.db; localStorage.setItem('gm_db_v3', JSON.stringify(db)); }
+                if (d.letters) { letters = d.letters; localStorage.setItem('gm_letters_v1', JSON.stringify(letters)); }
+                if (d.config) { config = d.config; localStorage.setItem('gm_config', JSON.stringify(config)); }
+                location.reload();
+            } catch {
+                alert('Fișier JSON invalid.');
+            }
+        };
+        r.readAsText(file);
+    }
+
+    function delItem(l, idx) {
+        if (confirm('Ștergi?')) {
+            db[l].splice(idx, 1);
+            localStorage.setItem('gm_db_v3', JSON.stringify(db));
+            renderList();
+        }
+    }
+</script>
+</body>
+</html>
