@@ -24,7 +24,7 @@
             background: var(--bg-app);
             color: var(--text-main);
             padding-top: 78px;
-            padding-bottom: 36px;
+            padding-bottom: 84px;
             transition: background 0.25s ease;
         }
         
@@ -105,8 +105,25 @@
             background: var(--soft-green); color: #155724; font-weight: bold;
             font-size: var(--f-size-trans); text-align: center; margin-bottom: 14px;
             padding: 10px 12px; border-radius: 10px; border-left: 5px solid var(--main-green);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); word-break: break-word;
         }
+
+        .floating-translate-btn {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            z-index: 950;
+            background: #0d6efd;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.35);
+            cursor: pointer;
+        }
+        .floating-translate-btn:active { transform: scale(0.97); }
 
         #expl-container {
             margin: 10px 0; padding: 12px; border-radius: 10px; font-size: 16px;
@@ -387,10 +404,7 @@
             <button class="btn-circle" onclick="stopAudio()" title="Stop">⏹️</button>
         </div>
         <div id="trans-box">Apasă pe cuvinte pentru traducere</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-            <span id="saved-sel-preview" style="font-size:12px; color:var(--text-muted);"></span>
-            <button class="lvl-btn btn-sm" style="background:#0d6efd; padding:7px 12px; font-size:13px;" onclick="translateSelectionWithAI()">🤖 Tradu textul selectat</button>
-        </div>
+        <div id="saved-sel-preview" style="font-size:12px; color:var(--text-muted); margin-bottom:10px;"></div>
         <div id="reader-display"></div>
         <div id="expl-container"></div>
         <div id="test-ui" class="hidden" style="margin-top:20px;"></div>
@@ -407,11 +421,19 @@
     </div>
 </div>
 
+<button id="floating-translate-btn" class="floating-translate-btn hidden" onclick="translateSelectionWithAI()">🤖 Tradu selecția</button>
+
 <!-- PANOU LATERAL SETĂRI & ADĂUGARE -->
 <div id="set-panel" class="side-panel">
     <h3>🤖 Setări AI (Corectare & Traducere)</h3>
     <label>Cheie Gemini API (stocată doar în browserul tău):</label>
     <input type="password" id="cfg-api-key" placeholder="AIza..." onchange="saveApiKey()">
+    <label>Model Gemini:</label>
+    <select id="cfg-model" onchange="applyCfg()">
+        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+        <option value="gemini-flash-latest">gemini-flash-latest</option>
+    </select>
     <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
         <input type="checkbox" id="cfg-ai-trans" style="width:18px; height:18px;" onchange="applyCfg()">
         <span style="font-size:13px; font-weight:600;">Folosește AI la traducerea cuvintelor (în context)</span>
@@ -461,8 +483,6 @@
 </div>
 
 <script>
-    const GEMINI_MODEL = 'gemini-2.5-flash';
-
     const DEFAULT_LETTERS = [
         {
             id: "termin-verschieben-sie",
@@ -636,7 +656,7 @@
 
     let db = JSON.parse(localStorage.getItem('gm_db_v3') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
     let letters = JSON.parse(localStorage.getItem('gm_letters_v1') || 'null') || DEFAULT_LETTERS;
-    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"22","rate":"1","aiTrans":true}');
+    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"22","rate":"1","aiTrans":true,"model":"gemini-2.5-flash"}');
     let geminiApiKey = localStorage.getItem('gm_gemini_key') || '';
 
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
@@ -659,7 +679,7 @@
             lastSavedSelection = sel;
             const prevEl = document.getElementById('saved-sel-preview');
             if (prevEl) {
-                prevEl.textContent = `Selectat: „${sel.slice(0, 42)}${sel.length > 42 ? '…' : ''}”`;
+                prevEl.textContent = `Selectat: „${sel.slice(0, 48)}${sel.length > 48 ? '…' : ''}”`;
             }
         }
     });
@@ -678,11 +698,14 @@
             .replace(/'/g, "\\'");
     }
 
-    async function callGemini(promptText, jsonSchema = null) {
-        if (!geminiApiKey) {
-            throw new Error('NO_API_KEY');
-        }
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+    function syncFloatingBtn() {
+        const btn = document.getElementById('floating-translate-btn');
+        const workVisible = !document.getElementById('work-screen').classList.contains('hidden');
+        btn.classList.toggle('hidden', !workVisible);
+    }
+
+    async function callGeminiOnce(modelName, promptText, jsonSchema = null) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
         const body = {
             contents: [{ parts: [{ text: promptText }] }],
             generationConfig: {
@@ -701,12 +724,46 @@
         });
 
         if (!res.ok) {
-            const errTxt = await res.text();
-            throw new Error(`API_ERROR_${res.status}: ${errTxt}`);
+            let errDetail = '';
+            try {
+                const errJson = await res.json();
+                errDetail = errJson?.error?.message || JSON.stringify(errJson);
+            } catch {
+                errDetail = await res.text();
+            }
+            const err = new Error(`HTTP ${res.status} (${modelName}): ${errDetail}`);
+            err.status = res.status;
+            throw err;
         }
         const data = await res.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         return text.trim();
+    }
+
+    async function callGemini(promptText, jsonSchema = null) {
+        if (!geminiApiKey) {
+            throw new Error('Lipsă cheie Gemini API (seteaz-o în ⚙️).');
+        }
+        const preferred = config.model || 'gemini-2.5-flash';
+        const candidates = [...new Set([preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'])];
+
+        let lastErr = null;
+        for (const m of candidates) {
+            try {
+                const out = await callGeminiOnce(m, promptText, jsonSchema);
+                if (m !== config.model) {
+                    config.model = m;
+                    localStorage.setItem('gm_config', JSON.stringify(config));
+                    const sel = document.getElementById('cfg-model');
+                    if (sel) sel.value = m;
+                }
+                return out;
+            } catch (e) {
+                lastErr = e;
+                if (e.status !== 404) break;
+            }
+        }
+        throw lastErr || new Error('Eroare necunoscută Gemini.');
     }
 
     function saveApiKey() {
@@ -723,6 +780,7 @@
     function hideAllScreens() {
         ['home-screen', 'letters-list-screen', 'letters-free-screen', 'letters-work-screen', 'lvl-screen', 'work-screen']
             .forEach(id => document.getElementById(id).classList.add('hidden'));
+        syncFloatingBtn();
     }
 
     function saveState(screenId, title, extra = {}) {
@@ -764,6 +822,7 @@
         stopAudio();
         hideAllScreens();
         document.getElementById(state.screenId).classList.remove('hidden');
+        syncFloatingBtn();
         document.getElementById('nav-title').innerText = state.title;
         curLvl = state.curLvl || '';
         curTab = state.curTab || 'L';
@@ -941,7 +1000,7 @@ ${letter}
                 <div class="ai-corrected">${escHtml(data.scrisoare_corectata)}</div>
             `;
         } catch (err) {
-            resultBox.innerHTML = `<span style="color:#b91c1c; font-weight:600;">Eroare la evaluarea AI: ${escHtml(err.message)}. Verifică cheia API din Setări (⚙️) sau conexiunea la internet.</span>`;
+            resultBox.innerHTML = `<span style="color:#b91c1c; font-weight:600;">Eroare la evaluarea AI: ${escHtml(err.message)}</span>`;
         } finally {
             btn.disabled = false;
             btn.textContent = '🤖 Evaluează cu AI';
@@ -1228,6 +1287,7 @@ ${letter}
         wrongQuestions = saved.wrong || [];
         hideAllScreens();
         document.getElementById('work-screen').classList.remove('hidden');
+        syncFloatingBtn();
         document.getElementById('test-ui').classList.remove('hidden');
         showQ();
     }
@@ -1245,6 +1305,7 @@ ${letter}
         document.getElementById('cfg-f1').value = config.font;
         document.getElementById('cfg-rate').value = config.rate;
         document.getElementById('cfg-ai-trans').checked = config.aiTrans !== false;
+        document.getElementById('cfg-model').value = config.model || 'gemini-2.5-flash';
         document.getElementById('cfg-api-key').value = geminiApiKey;
         if (geminiApiKey) {
             document.getElementById('api-key-status').textContent = '✓ Cheie Gemini API activă.';
@@ -1257,6 +1318,7 @@ ${letter}
         config.font = document.getElementById('cfg-f1').value;
         config.rate = document.getElementById('cfg-rate').value;
         config.aiTrans = document.getElementById('cfg-ai-trans').checked;
+        config.model = document.getElementById('cfg-model').value;
         document.getElementById('val-f1').innerText = config.font;
         document.body.style.background = config.bg;
         document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
@@ -1305,6 +1367,7 @@ ${letter}
         if (prevEl) prevEl.textContent = '';
         hideAllScreens();
         document.getElementById('work-screen').classList.remove('hidden');
+        syncFloatingBtn();
         document.getElementById('btn-back-main').classList.remove('hidden');
         document.getElementById('next-ui').classList.add('hidden');
         document.getElementById('skip-ui').classList.add('hidden');
@@ -1500,12 +1563,12 @@ ${letter}
     function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(event, this)">${escHtml(w)}</span>`).join(' '); }
 
     async function translateWithAIContext(targetText, fullContext) {
-        const cacheKey = `${targetText}::${fullContext.slice(0, 140)}`;
+        const cacheKey = `${config.model || 'default'}::${targetText}::${fullContext.slice(0, 140)}`;
         if (aiTransCache.has(cacheKey)) return aiTransCache.get(cacheKey);
 
         const prompt = `Tradu din germană în română expresia/cuvântul "${targetText}" ținând cont de contextul: "${fullContext}".
 Răspunde foarte scurt, pe un singur rând, în formatul:
-traducere în română (forma de bază / scurtă notă gramaticală dacă e utilă, max 8 cuvinte).`;
+traducere în română (forma de bază / scurtă notă gramaticală dacă e utilă, max 10 cuvinte).`;
 
         const result = await callGemini(prompt);
         aiTransCache.set(cacheKey, result);
@@ -1529,8 +1592,8 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
         try {
             const out = await translateWithAIContext(selected, context);
             transBox.innerText = `🤖 ${out}`;
-        } catch {
-            transBox.innerText = 'Eroare la traducerea AI.';
+        } catch (err) {
+            transBox.innerText = `Eroare AI: ${err.message}`;
         }
     }
 
@@ -1575,7 +1638,7 @@ traducere în română (forma de bază / scurtă notă gramaticală dacă e util
             if (res.ok) {
                 let data = await res.json();
                 if (data && data.responseData && data.responseData.translatedText) {
-                    transBox.innerText = data.responseData.translatedText;
+                    transBox.innerText = data[0][0][0];
                     return;
                 }
             }
