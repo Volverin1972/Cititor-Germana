@@ -1571,12 +1571,26 @@
         return '';
     }
 
+    function normalizeForCompare(str) {
+        return String(str || '')
+            .toLowerCase()
+            .replace(/[„“"»«.,!?;:()\-–—]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function looksUntranslatedGerman(translatedText, originalText) {
+        const a = normalizeForCompare(translatedText);
+        const b = normalizeForCompare(originalText);
+        if (!a) return true;
+        if (a === b || a.endsWith('->') || a.endsWith('=>')) return true;
+        if (originalText.length > 25 && translatedText.length < originalText.length * 0.45) return true;
+        return false;
+    }
+
     async function translateWithAI() {
         const activeSel = window.getSelection().toString().trim();
-        const target = activeSel || lastTransTarget || lastSavedSelection;
-        const ctx = activeSel
-            ? document.getElementById('reader-display').innerText.slice(0, 220)
-            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 220));
+        const target = (activeSel || lastTransTarget || lastSavedSelection || '').replace(/\s+/g, ' ').trim();
 
         const box = document.getElementById('trans-box');
         const btn = document.getElementById('btn-ai-trans');
@@ -1591,18 +1605,56 @@
             return;
         }
 
+        const cacheKey = 'ai:' + (config.model || 'gemini-3.5-flash-lite') + ':' + target.toLowerCase();
+        if (transCache[cacheKey]) {
+            box.innerText = `🤖 ${transCache[cacheKey]}`;
+            return;
+        }
+
         btn.disabled = true;
         btn.textContent = '⏳ AI...';
         box.innerText = '🤖 Se traduce prin Gemini...';
 
         try {
-            const sysPrompt = 'Tradu fidel și complet din germană în română. Scrie DOAR traducerea în română, fără explicații și fără engleză.';
-            const prompt = `Traduce complet în limba română textul în germană de mai jos, ținând cont de context:\nText: "${target}"\nContext: "${ctx}"`;
-            const out = await callGemini(prompt, sysPrompt, 9000, 220);
-            const cleanLine = (out || '').replace(/^Traducere(?:\s+în\s+română)?:\s*/i, '').trim();
-            box.innerText = cleanLine ? `🤖 ${cleanLine}` : 'Răspuns gol de la Gemini.';
+            const sysPrompt = 'Ești un traducător din limba germană în limba română. Traduci fidel și complet în limba română textul primit, fără a lăsa textul în germană și fără explicații.';
+            const prompt = `Traduce în limba română:\n${target}`;
+            let out = await callGemini(prompt, sysPrompt, 9500, 350);
+            let cleanLine = (out || '')
+                .replace(/^(Traducere(?:\s+în\s+română)?|Romanian|Deutsch|German)\s*:\s*/i, '')
+                .replace(/^["„]+|["“]+$/g, '')
+                .trim();
+
+            if (looksUntranslatedGerman(cleanLine, target)) {
+                const retryPrompt = `Redă exclusiv în limba română traducerea completă a acestui fragment din germană:\n${target}`;
+                out = await callGemini(retryPrompt, sysPrompt, 9500, 350);
+                cleanLine = (out || '')
+                    .replace(/^(Traducere(?:\s+în\s+română)?|Romanian|Deutsch|German)\s*:\s*/i, '')
+                    .replace(/^["„]+|["“]+$/g, '')
+                    .trim();
+            }
+
+            if (looksUntranslatedGerman(cleanLine, target)) {
+                const fallback = await instantTranslate(target);
+                if (fallback) {
+                    transCache[cacheKey] = fallback;
+                    box.innerText = `🤖 ${fallback}`;
+                    return;
+                }
+            }
+
+            if (cleanLine) {
+                transCache[cacheKey] = cleanLine;
+                box.innerText = `🤖 ${cleanLine}`;
+            } else {
+                box.innerText = 'Răspuns gol de la Gemini.';
+            }
         } catch (e) {
-            box.innerText = 'Eroare Gemini: ' + (e.message || 'verifică cheia API');
+            const fallback = await instantTranslate(target);
+            if (fallback) {
+                box.innerText = `🤖 ${fallback}`;
+            } else {
+                box.innerText = 'Eroare Gemini: ' + (e.message || 'verifică cheia API');
+            }
         } finally {
             btn.disabled = false;
             btn.textContent = '🤖 Tradu cu AI';
