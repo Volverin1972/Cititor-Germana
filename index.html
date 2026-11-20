@@ -275,7 +275,7 @@
                 <span class="hub-badge">A1–C2 • Audio + Traducere</span>
                 <h2 style="margin:0 0 6px 0;">📚 Lecturi & Teste</h2>
                 <p style="margin:0; color:var(--text-muted); font-size:14px;">
-                    Texte cu sinteză vocală, traducere rapidă, buton AI și teste cu reluare greșeli.
+                    Texte cu sinteză vocală, traducere prin Gemini, buton AI și teste cu reluare greșeli.
                 </p>
             </div>
         </div>
@@ -416,8 +416,8 @@
     <input type="password" id="cfg-api-key" placeholder="AIza..." onchange="saveApiKey()">
     <label>Model Gemini:</label>
     <select id="cfg-model" onchange="applyCfg()">
-        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         <option value="gemini-1.5-flash">gemini-1.5-flash</option>
     </select>
     <div id="ai-key-msg" style="font-size:12px; color:var(--main-green-dark); margin-top:6px; font-weight:600;"></div>
@@ -545,7 +545,7 @@
     let db = JSON.parse(localStorage.getItem('gm_db_v3')) || { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] };
     let letters = JSON.parse(localStorage.getItem('gm_letters_v1')) || DEFAULT_LETTERS;
     if (!Array.isArray(letters) || letters.length === 0) letters = DEFAULT_LETTERS;
-    let config = JSON.parse(localStorage.getItem('gm_config')) || { bg: '#f0f2f5', font: '22', rate: '1', model: 'gemini-2.5-flash' };
+    let config = JSON.parse(localStorage.getItem('gm_config')) || { bg: '#f0f2f5', font: '22', rate: '1', model: 'gemini-2.0-flash' };
     let geminiKey = (localStorage.getItem('gm_gemini_key') || '').trim();
     let cachedWorkingAI = JSON.parse(localStorage.getItem('gm_working_ai') || 'null');
     const transCache = {};
@@ -582,6 +582,21 @@
             txt = txt.replace(re, '');
         }
         return txt.trim();
+    }
+
+    async function fetchWithTimeout(url, options, timeoutMs = 10000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            return await fetch(url, { ...(options || {}), signal: controller.signal });
+        } catch (err) {
+            if (err && err.name === 'AbortError') {
+                throw new Error('Răspunsul a depășit timpul limită.');
+            }
+            throw err;
+        } finally {
+            clearTimeout(timer);
+        }
     }
 
     document.addEventListener('selectionchange', () => {
@@ -724,7 +739,7 @@
         ).join('');
     }
 
-    async function requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction, maxTokens = 450) {
+    async function requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction, maxTokens = 450, timeoutMs = 10000) {
         const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
         const payload = {
             contents: [{ parts: [{ text: promptText }] }],
@@ -736,11 +751,11 @@
         if (systemInstruction && ver === 'v1beta') {
             payload.systemInstruction = { parts: [{ text: systemInstruction }] };
         }
-        const res = await fetch(url, {
+        const res = await fetchWithTimeout(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        });
+        }, timeoutMs);
         if (res.ok) {
             const data = await res.json();
             const parts = data.candidates?.[0]?.content?.parts || [];
@@ -754,7 +769,7 @@
         throw new Error(`HTTP ${res.status} (${ver}/${modelName})`);
     }
 
-    async function callGemini(promptText, systemInstruction = '') {
+    async function callGemini(promptText, systemInstruction = '', timeoutMs = 10000, maxTokens = 450) {
         const cleanKey = (geminiKey || '').trim();
         if (!cleanKey) {
             throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
@@ -762,7 +777,7 @@
 
         if (cachedWorkingAI && cachedWorkingAI.ver && cachedWorkingAI.model) {
             try {
-                return await requestModelEndpoint(cachedWorkingAI.ver, cachedWorkingAI.model, cleanKey, promptText, systemInstruction);
+                return await requestModelEndpoint(cachedWorkingAI.ver, cachedWorkingAI.model, cleanKey, promptText, systemInstruction, maxTokens, timeoutMs);
             } catch (err) {
                 if (String(err.message || '').indexOf('Cheie API') === 0) throw err;
                 cachedWorkingAI = null;
@@ -770,8 +785,8 @@
             }
         }
 
-        const preferred = (config.model || 'gemini-2.5-flash').trim();
-        const fallbackModels = [preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v, idx, arr) => v && arr.indexOf(v) === idx);
+        const preferred = (config.model || 'gemini-2.0-flash').trim();
+        const fallbackModels = [preferred, 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'].filter((v, idx, arr) => v && arr.indexOf(v) === idx);
         const versions = ['v1beta', 'v1'];
         let lastStatus = '';
 
@@ -780,7 +795,7 @@
                 const ver = versions[v];
                 const modelName = fallbackModels[m];
                 try {
-                    const out = await requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction);
+                    const out = await requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction, maxTokens, timeoutMs);
                     cachedWorkingAI = { ver, model: modelName };
                     localStorage.setItem('gm_working_ai', JSON.stringify(cachedWorkingAI));
                     return out;
@@ -792,16 +807,16 @@
         }
 
         try {
-            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
+            const listRes = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`, {}, 7000);
             if (listRes.ok) {
                 const listData = await listRes.json();
                 const found = (listData.models || [])
                     .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
                     .map(m => String(m.name || '').replace(/^models\//, ''))
                     .filter(Boolean);
-                for (let i = 0; i < found.length; i++) {
+                for (let i = 0; i < Math.min(found.length, 3); i++) {
                     try {
-                        const out = await requestModelEndpoint('v1beta', found[i], cleanKey, promptText, systemInstruction);
+                        const out = await requestModelEndpoint('v1beta', found[i], cleanKey, promptText, systemInstruction, maxTokens, timeoutMs);
                         cachedWorkingAI = { ver: 'v1beta', model: found[i] };
                         localStorage.setItem('gm_working_ai', JSON.stringify(cachedWorkingAI));
                         return out;
@@ -850,7 +865,7 @@
         ].filter(Boolean).join('\n');
 
         try {
-            const reply = await callGemini(prompt, sysPrompt);
+            const reply = await callGemini(prompt, sysPrompt, 12000, 450);
             outBox.textContent = reply || 'Răspuns gol de la AI.';
         } catch (e) {
             outBox.textContent = 'Eroare la evaluarea AI: ' + (e.message || 'verifică cheia API');
@@ -1160,8 +1175,8 @@
         document.getElementById('cfg-rate').value = config.rate || '1';
         const selModel = document.getElementById('cfg-model');
         if (selModel) {
-            const exists = Array.from(selModel.options).some(opt => opt.value === (config.model || 'gemini-2.5-flash'));
-            selModel.value = exists ? (config.model || 'gemini-2.5-flash') : 'gemini-2.5-flash';
+            const exists = Array.from(selModel.options).some(opt => opt.value === (config.model || 'gemini-2.0-flash'));
+            selModel.value = exists ? (config.model || 'gemini-2.0-flash') : 'gemini-2.0-flash';
         }
         document.getElementById('cfg-api-key').value = geminiKey;
         if (geminiKey) {
@@ -1430,9 +1445,21 @@
         const key = 'f:' + cleaned.toLowerCase();
         if (transCache[key]) return transCache[key];
 
+        if (geminiKey) {
+            try {
+                const sysPrompt = 'Tradu DOAR în limba română. Scrie doar traducerea scurtă (1-8 cuvinte), fără engleză și fără explicații.';
+                const aiOut = await callGemini(`Germană: "${cleaned}"\nTraducere în română:`, sysPrompt, 6000, 80);
+                const cleanLine = (aiOut || '').split('\n').map(l => l.trim()).filter(Boolean).pop() || '';
+                if (cleanLine) {
+                    transCache[key] = cleanLine;
+                    return cleanLine;
+                }
+            } catch {}
+        }
+
         const q = encodeURIComponent(cleaned);
         try {
-            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${q}`);
+            const res = await fetchWithTimeout(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${q}`, {}, 5000);
             if (res.ok) {
                 const data = await res.json();
                 if (data && Array.isArray(data[0])) {
@@ -1446,7 +1473,7 @@
         } catch {}
 
         try {
-            const res = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=de|ro`);
+            const res = await fetchWithTimeout(`https://api.mymemory.translated.net/get?q=${q}&langpair=de|ro`, {}, 5000);
             if (res.ok) {
                 const data = await res.json();
                 const out = (data?.responseData?.translatedText || '').trim();
@@ -1475,23 +1502,23 @@
             return;
         }
         if (!geminiKey) {
-            alert('Adaugă cheia Gemini API în Setări (⚙️) pentru a folosi traducerea cu AI.');
+            alert('Adaugă cheia Gemini API în Setări (⚙️) pentru a folosi traducerea prin Gemini.');
             toggleSet();
             return;
         }
 
         btn.disabled = true;
         btn.textContent = '⏳ AI...';
-        box.innerText = '🤖 Se traduce...';
+        box.innerText = '🤖 Se traduce prin Gemini...';
 
         try {
             const sysPrompt = 'Tradu DOAR în limba română. Scrie doar traducerea scurtă (1-8 cuvinte), fără engleză și fără explicații.';
             const prompt = `Germană: "${target}" | Context: "${ctx}"\nTraducere în română:`;
-            const out = await callGemini(prompt, sysPrompt);
+            const out = await callGemini(prompt, sysPrompt, 7000, 90);
             const firstLine = (out || '').split('\n').map(l => l.trim()).filter(Boolean).pop() || out;
-            box.innerText = firstLine ? `🤖 ${firstLine}` : 'Răspuns gol de la AI.';
+            box.innerText = firstLine ? `🤖 ${firstLine}` : 'Răspuns gol de la Gemini.';
         } catch (e) {
-            box.innerText = 'Eroare AI: ' + (e.message || 'verifică cheia API');
+            box.innerText = 'Eroare Gemini: ' + (e.message || 'verifică cheia API');
         } finally {
             btn.disabled = false;
             btn.textContent = '🤖 Tradu cu AI';
@@ -1508,9 +1535,9 @@
         }
         lastTransTarget = selected;
         lastTransContext = document.getElementById('reader-display').innerText.slice(0, 200);
-        box.innerText = '⚡ Se traduce...';
+        box.innerText = '🤖 Se traduce...';
         const out = await fastTranslate(selected);
-        box.innerText = out ? `⚡ ${out}` : 'Traducere indisponibilă.';
+        box.innerText = out ? `🤖 ${out}` : 'Traducere indisponibilă.';
     }
 
     async function trans(ev, el) {
@@ -1530,7 +1557,7 @@
         if (info) info.textContent = `Cuvânt: „${word}”`;
 
         const box = document.getElementById('trans-box');
-        box.innerText = '⚡ Se traduce...';
+        box.innerText = '🤖 Se traduce...';
         const out = await fastTranslate(word);
         box.innerText = out || 'Traducere indisponibilă.';
     }
