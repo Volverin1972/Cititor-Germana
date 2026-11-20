@@ -569,20 +569,33 @@
     function cleanAIOutput(raw) {
         let txt = String(raw || '')
             .replace(/\*\*/g, '')
-            .replace(/^\s*\*\s+/gm, '• ')
-            .replace(/^\s*\*\s*/gm, '')
+            .replace(/^\s*[-*•]+\s*/gm, '')
             .replace(/^\s*#{1,4}\s*/gm, '');
 
         const cutMarkers = [
-            /\n\s*•?\s*Romanian only\?[\s\S]*$/i,
-            /\n\s*•?\s*Strict translation\?[\s\S]*$/i,
+            /\n\s*Romanian only\?[\s\S]*$/i,
+            /\n\s*Strict translation\?[\s\S]*$/i,
             /\n\s*\*?Self-correction:?\*?[\s\S]*$/i,
             /\n\s*Ensure the tone is helpful[\s\S]*$/i
         ];
         for (const re of cutMarkers) {
             txt = txt.replace(re, '');
         }
-        return txt.trim();
+
+        const roStartIdx = txt.search(/(?:^|\n)\s*Notă și nivel:/i);
+        if (roStartIdx !== -1) {
+            txt = txt.slice(roStartIdx);
+        }
+
+        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|\*?Text:\*?|\*?Errors:\*?)/i;
+        txt = txt
+            .split('\n')
+            .filter(line => !noiseLine.test(line.trim()))
+            .join('\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+
+        return txt;
     }
 
     async function fetchWithTimeout(url, options, timeoutMs = 10000) {
@@ -860,17 +873,16 @@
         outBox.classList.remove('hidden');
         outBox.textContent = 'Se analizează scrisoarea...';
 
-        const sysPrompt = 'Răspunde DOAR în română. Fără engleză. Fără asteriscuri. Fii foarte scurt și direct.';
+        const sysPrompt = 'Scrie răspunsul final EXCLUSIV în limba română. Nu repeta cerința în engleză. Fără asteriscuri.';
         const prompt = [
-            'Evaluează scurt scrisoarea în germană (nivel B1).',
+            'Evaluează scurt în limba română această scrisoare în germană (nivel B1).',
             topic ? `Tema: ${topic}` : '',
             `Registru: ${reg}`,
-            'Scrie exact:',
+            'Răspunde doar în română cu structura:',
             'Notă și nivel: [nota /10, nivel CEFR]',
             'Greșeli: [greșeală -> corectura, pe scurt]',
-            'Corectură B1: [scrisoarea corectată scurt]',
+            'Corectură B1: [scrisoarea corectată în germană]',
             '',
-            'Text:',
             letter
         ].filter(Boolean).join('\n');
 
