@@ -570,6 +570,10 @@
         let out = String(line || '').replace(/^\s*\*?Original:\*?\s*/i, '');
         if (/^\s*\*?(Analysis|Target Language):\*?\s*/i.test(out.trim())) return '';
         const replacements = [
+            [/\bSalutation:/gi, 'Salut:'],
+            [/\bSentence\s+(\d+):/gi, 'Propoziția $1:'],
+            [/\bClosing:/gi, 'Încheiere:'],
+            [/\ba bit clunky\b/gi, 'puțin stângaci'],
             [/\bMissing comma\.?/gi, 'lipsește virgula'],
             [/\bGrammatically okay,?\s*but\b/gi, 'corect gramatical, dar'],
             [/\bis more formal\.?/gi, 'este mai formal'],
@@ -598,8 +602,8 @@
     function looksLikeEnglishLine(line) {
         const s = String(line || '').trim();
         if (!s) return false;
-        if (/^(Target Language|Original|Analysis|Input|Task|Constraints|Format):/i.test(s)) return true;
-        return /\b(missing comma|masculine|neuter|accusative|dative|nominative|word order|preposition|spelling|compound|capitalization|grammatically|more formal|is better|the letter|your letter|after ')\b/i.test(s);
+        if (/^(Target Language|Original|Analysis|Input|Task|Constraints|Format|Salutation|Sentence\s+\d+|Closing):/i.test(s)) return true;
+        return /\b(missing comma|masculine|neuter|accusative|dative|nominative|word order|preposition|spelling|compound|capitalization|grammatically|more formal|is better|a bit clunky|the letter|your letter|after ')\b/i.test(s);
     }
 
     function cleanAIOutput(raw) {
@@ -613,7 +617,8 @@
             /\n\s*Romanian only\?[\s\S]*$/i,
             /\n\s*Strict translation\?[\s\S]*$/i,
             /\n\s*Self-correction:?[\s\S]*$/i,
-            /\n\s*Ensure the tone is helpful[\s\S]*$/i
+            /\n\s*Ensure the tone is helpful[\s\S]*$/i,
+            /\n\s*Textul scrisorii:[\s\S]*$/i
         ];
         for (const re of cutMarkers) {
             txt = txt.replace(re, '');
@@ -788,7 +793,7 @@
         const words = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
 
         const hasGreeting = /(sehr geehrte|hallo|liebe|lieber|guten tag|hi)\b/i.test(txt);
-        const hasClosing = /(mit freundlichen grüßen|mit herzlichen grüßen|mit herztlichen grüßen|viele grüße|freundliche grüße|freundliche grüße|herzliche grüße|herztliche grüße|freundlich\w*|herzli\w*|herztli\w*|grüß\w*|gruß\w*|bis bald|tschüss|liebe grüße)/i.test(txt);
+        const hasClosing = /(mit freundlichen grüßen|mit herzlichen grüßen|mit herztlichen grüßen|viele grüße|freundliche grüße|herzliche grüße|herztliche grüße|freundlich\w*|herzli\w*|herztli\w*|grüß\w*|gruß\w*|bis bald|tschüss|liebe grüße)/i.test(txt);
         const usesSie = /\b(sie|ihnen|ihr|ihre|ihren|ihrem)\b/i.test(txt);
         const usesDu = /\b(du|dir|dich|dein|deine|deinen|deinem)\b/i.test(txt);
         const registerConsistent = reg === 'Formal (Sie)' ? !(usesDu && !usesSie) : !(usesSie && !usesDu);
@@ -926,17 +931,18 @@
         outBox.classList.remove('hidden');
         outBox.textContent = 'Se analizează scrisoarea...';
 
-        const sysPrompt = 'Scrie răspunsul în limba română. Toate explicațiile gramaticale și titlurile secțiunilor trebuie să fie în română; doar scrisoarea corectată la final este în germană.';
+        const sysPrompt = 'Scrie răspunsul exclusiv în limba română (doar varianta corectată la final este în germană). Include obligatoriu o notă numerică de la 1 la 10 și nivelul CEFR estimat. Nu copia textul original al utilizatorului la final.';
         const prompt = [
             'Evaluează scurt în limba română următoarea scrisoare în germană (nivel B1).',
             topic ? `Tema: ${topic}` : '',
             `Registru: ${reg}`,
-            'Folosește exact aceste secțiuni în română:',
-            'Notă și nivel:',
+            'Folosește exact această structură:',
+            'Notă și nivel: [ex. 6.5/10 — Nivel B1]',
             'Greșeli:',
             'Corectură B1:',
+            'Nu repeta textul original al scrisorii.',
             '',
-            'Textul scrisorii:',
+            'Scrisoarea de evaluat:',
             letter
         ].filter(Boolean).join('\n');
 
@@ -967,7 +973,7 @@
             'Evaluează scurt în limba română următoarea scrisoare în germană pentru nivelul B1:',
             topic ? `Tema: ${topic}` : 'Tema: liberă',
             `Registru: ${reg}`,
-            '1) Notă estimativă și nivel CEFR.',
+            '1) Notă estimativă (de la 1 la 10) și nivel CEFR.',
             '2) Greșeli și cum se corectează.',
             '3) Ce trebuie îmbunătățit.',
             '4) Varianta corectată la nivel B1.',
