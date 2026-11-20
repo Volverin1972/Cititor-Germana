@@ -566,6 +566,26 @@
     let lastTransTarget = '';
     let lastTransContext = '';
 
+    function sanitizeEnglishFragments(line) {
+        let out = String(line || '');
+        if (/^\s*\*?Analysis:\*?\s*$/i.test(out.trim())) return '';
+        const replacements = [
+            [/\bGrammatically okay,?\s*but\b/gi, 'Corect gramatical, dar'],
+            [/\bis better\b/gi, 'este mai natural'],
+            [/\bWord order\/Preposition\b/gi, 'ordine a cuvintelor / prepoziție'],
+            [/\bSpelling\/Compound\b/gi, 'ortografie / cuvânt compus'],
+            [/\bUmlaut\b/gi, 'umlaut'],
+            [/\bAkkusativ,\s*maskulin\b/gi, 'acuzativ, masculin'],
+            [/\bDativ,\s*Kompositum\b/gi, 'dativ, cuvânt compus'],
+            [/\bNominativ,\s*maskulin\b/gi, 'nominativ, masculin'],
+            [/\bNeutrum\b/gi, 'neutru']
+        ];
+        for (const [re, ro] of replacements) {
+            out = out.replace(re, ro);
+        }
+        return out.trim();
+    }
+
     function cleanAIOutput(raw) {
         let txt = String(raw || '')
             .replace(/\*\*/g, '')
@@ -582,15 +602,11 @@
             txt = txt.replace(re, '');
         }
 
-        const roStartIdx = txt.search(/(?:^|\n)\s*Notă și nivel:/i);
-        if (roStartIdx !== -1) {
-            txt = txt.slice(roStartIdx);
-        }
-
-        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|\*?Text:\*?|\*?Errors:\*?)/i;
+        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|\*?Text:\*?|\*?Errors:\*?|\*?Analysis:\*?|\[nota \/10, nivel CEFR\]|\[greșeală -> corectura, pe scurt\]|\[scrisoarea corectată în germană\])/i;
         txt = txt
             .split('\n')
-            .filter(line => !noiseLine.test(line.trim()))
+            .map(line => sanitizeEnglishFragments(line))
+            .filter(line => line && !noiseLine.test(line.trim()))
             .join('\n')
             .replace(/\n{3,}/g, '\n\n')
             .trim();
@@ -873,16 +889,17 @@
         outBox.classList.remove('hidden');
         outBox.textContent = 'Se analizează scrisoarea...';
 
-        const sysPrompt = 'Scrie răspunsul final EXCLUSIV în limba română. Nu repeta cerința în engleză. Fără asteriscuri.';
+        const sysPrompt = 'Ești profesor de limba germană pentru vorbitori de limba română. Scrie TOATE explicațiile, notițele și observațiile DOAR în limba română (niciodată în engleză). Doar textul scrisorii corectate din secțiunea finală este în germană.';
         const prompt = [
-            'Evaluează scurt în limba română această scrisoare în germană (nivel B1).',
+            'Corectează scurt scrisoarea de mai jos (nivel B1) și scrie explicațiile în română.',
             topic ? `Tema: ${topic}` : '',
             `Registru: ${reg}`,
-            'Răspunde doar în română cu structura:',
-            'Notă și nivel: [nota /10, nivel CEFR]',
-            'Greșeli: [greșeală -> corectura, pe scurt]',
-            'Corectură B1: [scrisoarea corectată în germană]',
+            'Completează direct valorile (nu copia parantezele pătrate):',
+            'Notă și nivel: scrie nota din 10 și nivelul CEFR',
+            'Greșeli: enumeră fiecare greșeală -> varianta corectă (explicația pe scurt în română)',
+            'Corectură B1: scrisoarea corectată în germană',
             '',
+            'Scrisoare:',
             letter
         ].filter(Boolean).join('\n');
 
