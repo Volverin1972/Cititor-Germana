@@ -24,7 +24,7 @@
             background: var(--bg-app);
             color: var(--text-main);
             padding-top: 78px;
-            padding-bottom: 84px;
+            padding-bottom: 112px;
             transition: background 0.25s ease;
         }
         
@@ -118,14 +118,14 @@
 
         #floating-translate-group {
             position: fixed;
-            bottom: 16px;
-            right: 16px;
+            bottom: 12px;
+            right: 12px;
             z-index: 950;
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            max-width: calc(100vw - 32px);
+            gap: 6px;
+            flex-wrap: nowrap;
+            max-width: calc(100vw - 24px);
         }
 
         .floating-ai-btn {
@@ -133,11 +133,12 @@
             color: #fff;
             border: none;
             border-radius: 999px;
-            padding: 12px 15px;
-            font-size: 13px;
+            padding: 10px 13px;
+            font-size: 12px;
             font-weight: 700;
             box-shadow: 0 6px 18px rgba(30, 58, 138, 0.35);
             cursor: pointer;
+            white-space: nowrap;
         }
         .floating-ai-btn:active { transform: scale(0.97); }
         .floating-ai-btn:disabled { opacity: 0.6; cursor: wait; }
@@ -147,11 +148,12 @@
             color: #fff;
             border: none;
             border-radius: 999px;
-            padding: 12px 16px;
-            font-size: 13px;
+            padding: 10px 13px;
+            font-size: 12px;
             font-weight: 700;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.35);
             cursor: pointer;
+            white-space: nowrap;
         }
         .floating-translate-btn:active { transform: scale(0.97); }
 
@@ -1573,8 +1575,8 @@
         const activeSel = window.getSelection().toString().trim();
         const target = activeSel || lastTransTarget || lastSavedSelection;
         const ctx = activeSel
-            ? document.getElementById('reader-display').innerText.slice(0, 180)
-            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 180));
+            ? document.getElementById('reader-display').innerText.slice(0, 220)
+            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 220));
 
         const box = document.getElementById('trans-box');
         const btn = document.getElementById('btn-ai-trans');
@@ -1594,11 +1596,11 @@
         box.innerText = '🤖 Se traduce prin Gemini...';
 
         try {
-            const sysPrompt = 'Tradu DOAR în limba română. Scrie doar traducerea scurtă (1-8 cuvinte), fără engleză și fără explicații.';
-            const prompt = `Germană: "${target}" | Context: "${ctx}"\nTraducere în română:`;
-            const out = await callGemini(prompt, sysPrompt, 7500, 90);
-            const firstLine = (out || '').split('\n').map(l => l.trim()).filter(Boolean).pop() || out;
-            box.innerText = firstLine ? `🤖 ${firstLine}` : 'Răspuns gol de la Gemini.';
+            const sysPrompt = 'Tradu fidel și complet din germană în română. Scrie DOAR traducerea în română, fără explicații și fără engleză.';
+            const prompt = `Traduce complet în limba română textul în germană de mai jos, ținând cont de context:\nText: "${target}"\nContext: "${ctx}"`;
+            const out = await callGemini(prompt, sysPrompt, 9000, 220);
+            const cleanLine = (out || '').replace(/^Traducere(?:\s+în\s+română)?:\s*/i, '').trim();
+            box.innerText = cleanLine ? `🤖 ${cleanLine}` : 'Răspuns gol de la Gemini.';
         } catch (e) {
             box.innerText = 'Eroare Gemini: ' + (e.message || 'verifică cheia API');
         } finally {
