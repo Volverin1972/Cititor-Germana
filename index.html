@@ -508,6 +508,16 @@
 </div>
 
 <script>
+    function safeParseJSON(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            return JSON.parse(raw);
+        } catch {
+            return fallback;
+        }
+    }
+
     const DEFAULT_LETTERS = [
         {
             id: "termin-verschieben-sie",
@@ -679,11 +689,12 @@
         }
     ];
 
-    let db = JSON.parse(localStorage.getItem('gm_db_v3') || '{"A1":[],"A2":[],"B1":[],"B2":[],"C1":[],"C2":[]}');
-    let letters = JSON.parse(localStorage.getItem('gm_letters_v1') || 'null') || DEFAULT_LETTERS;
-    let config = JSON.parse(localStorage.getItem('gm_config') || '{"bg":"#f0f2f5","font":"22","rate":"1","aiTrans":false,"model":"gemini-2.5-flash"}');
+    let db = safeParseJSON('gm_db_v3', { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] });
+    let letters = safeParseJSON('gm_letters_v1', DEFAULT_LETTERS);
+    if (!Array.isArray(letters) || letters.length === 0) letters = DEFAULT_LETTERS;
+    let config = safeParseJSON('gm_config', { bg: '#f0f2f5', font: '22', rate: '1', aiTrans: false, model: 'gemini-2.5-flash' });
     let geminiApiKey = (localStorage.getItem('gm_gemini_key') || '').trim();
-    const persistentCache = JSON.parse(localStorage.getItem('gm_trans_cache_v1') || '{}');
+    const persistentCache = safeParseJSON('gm_trans_cache_v1', {});
 
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
     let lastRawBody = '', lastSetSize = 10, lastShuffle = true;
@@ -718,16 +729,18 @@
     }
 
     document.addEventListener('selectionchange', () => {
-        const sel = (window.getSelection()?.toString() || '').trim();
-        if (sel.length > 0) {
-            lastSavedSelection = sel;
-            lastTransTarget = sel;
-            lastTransContext = (document.getElementById('reader-display')?.innerText || '').slice(0, 260);
-            const prevEl = document.getElementById('saved-sel-preview');
-            if (prevEl) {
-                prevEl.textContent = `Selectat: „${sel.slice(0, 48)}${sel.length > 48 ? '…' : ''}”`;
+        try {
+            const sel = (window.getSelection()?.toString() || '').trim();
+            if (sel.length > 0) {
+                lastSavedSelection = sel;
+                lastTransTarget = sel;
+                lastTransContext = (document.getElementById('reader-display')?.innerText || '').slice(0, 260);
+                const prevEl = document.getElementById('saved-sel-preview');
+                if (prevEl) {
+                    prevEl.textContent = `Selectat: „${sel.slice(0, 48)}${sel.length > 48 ? '…' : ''}”`;
+                }
             }
-        }
+        } catch {}
     });
 
     function escHtml(str) {
@@ -913,12 +926,16 @@
         isApplyingState = false;
     }
 
-    window.onload = () => {
-        loadCfg();
-        checkResume();
-        analyzeFreeLetter();
-        saveState('home-screen', 'GERMANA MASTER');
-    };
+    window.addEventListener('DOMContentLoaded', () => {
+        try {
+            loadCfg();
+            checkResume();
+            analyzeFreeLetter();
+            saveState('home-screen', 'GERMANA MASTER');
+        } catch (e) {
+            console.error('Init error:', e);
+        }
+    });
 
     function goHome() {
         stopAudio();
@@ -1341,7 +1358,7 @@ ${letter}
     }
 
     function resumeTest() {
-        let saved = JSON.parse(localStorage.getItem('gm_last_test'));
+        let saved = safeParseJSON('gm_last_test', null);
         if (!saved) return;
         curSession = saved.session; curIdx = saved.idx; score = saved.score;
         lastRawBody = saved.raw; lastSetSize = saved.size;
@@ -1364,9 +1381,9 @@ ${letter}
     }
 
     function loadCfg() {
-        document.getElementById('cfg-bg').value = config.bg;
-        document.getElementById('cfg-f1').value = config.font;
-        document.getElementById('cfg-rate').value = config.rate;
+        document.getElementById('cfg-bg').value = config.bg || '#f0f2f5';
+        document.getElementById('cfg-f1').value = config.font || '22';
+        document.getElementById('cfg-rate').value = config.rate || '1';
         document.getElementById('cfg-ai-trans').checked = Boolean(config.aiTrans);
         document.getElementById('cfg-model').value = config.model || 'gemini-2.5-flash';
         document.getElementById('cfg-api-key').value = geminiApiKey;
@@ -1623,152 +1640,4 @@ ${letter}
     function toggleSet() { document.getElementById('set-panel').classList.toggle('open'); }
     function stopAudio() { synth.cancel(); }
     function playAll() { synth.cancel(); let ut = new SpeechSynthesisUtterance(document.getElementById('reader-display').innerText); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function playSelect() { let t = (window.getSelection()?.toString() || '').trim() || lastSavedSelection; if (!t) return; synth.cancel(); let ut = new SpeechSynthesisUtterance(t); ut.lang = 'de-DE'; ut.rate = config.rate; synth.speak(ut); }
-    function pauseAudio() { synth.pause(); }
-    function renderReading(txt) { document.getElementById('reader-display').innerHTML = txt.split(/\s+/).map(w => `<span class="word" onclick="trans(event, this)">${escHtml(w)}</span>`).join(' '); }
-
-    async function fastTranslate(rawText) {
-        const cleaned = rawText.replace(/\s+/g, ' ').trim().slice(0, 350);
-        if (!cleaned) return '';
-        const cacheKey = `fast::${cleaned.toLowerCase()}`;
-        if (persistentCache[cacheKey]) return persistentCache[cacheKey];
-
-        const q = encodeURIComponent(cleaned);
-        try {
-            const res = await fetchWithTimeout(
-                `https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=ro&dt=t&q=${q}`,
-                {},
-                2500
-            );
-            if (res.ok) {
-                const data = await res.json();
-                if (data && Array.isArray(data[0])) {
-                    const out = data[0].map(part => part[0]).filter(Boolean).join('').trim();
-                    if (out) {
-                        persistentCache[cacheKey] = out;
-                        savePersistentCache();
-                        return out;
-                    }
-                }
-            }
-        } catch {}
-
-        try {
-            const res = await fetchWithTimeout(
-                `https://api.mymemory.translated.net/get?q=${q}&langpair=de|ro`,
-                {},
-                2500
-            );
-            if (res.ok) {
-                const data = await res.json();
-                const out = (data?.responseData?.translatedText || '').trim();
-                if (out) {
-                    persistentCache[cacheKey] = out;
-                    savePersistentCache();
-                    return out;
-                }
-            }
-        } catch {}
-
-        return '';
-    }
-
-    async function runAIWordOrSelectionTranslation(target, context, forceRefresh = false) {
-        const cleanTarget = target.replace(/\s+/g, ' ').trim().slice(0, 350);
-        const cleanCtx = (context || '').replace(/\s+/g, ' ').trim().slice(0, 260);
-        if (!cleanTarget) return '';
-
-        const cacheKey = `ai::${config.model || 'def'}::${cleanTarget.toLowerCase()}::${cleanCtx.toLowerCase()}`;
-        if (!forceRefresh && persistentCache[cacheKey]) {
-            return persistentCache[cacheKey];
-        }
-
-        const aiOut = await callGemini(
-            `Tradu din germană în română expresia sau cuvântul "${cleanTarget}" ținând cont de contextul: "${cleanCtx}".
-Răspunde concis în română (traducere exactă + sensul în context sau forma de bază dacă e util, max 16 cuvinte).`,
-            null,
-            10000
-        );
-        if (aiOut) {
-            persistentCache[cacheKey] = aiOut;
-            savePersistentCache();
-        }
-        return aiOut;
-    }
-
-    async function translateCurrentWithAI() {
-        const activeSel = (window.getSelection()?.toString() || '').trim();
-        const target = activeSel || lastTransTarget || lastSavedSelection;
-        const context = activeSel
-            ? (document.getElementById('reader-display')?.innerText || '').slice(0, 260)
-            : (lastTransContext || (document.getElementById('reader-display')?.innerText || '').slice(0, 260));
-
-        const transBox = document.getElementById('trans-box');
-        const btn = document.getElementById('btn-ask-ai-trans');
-
-        if (!target) {
-            transBox.innerText = 'Apasă pe un cuvânt sau selectează un text mai întâi.';
-            return;
-        }
-        if (!geminiApiKey) {
-            alert('Introdu cheia Gemini API în Setări (⚙️) pentru a folosi traducerea cu AI.');
-            toggleSet();
-            document.getElementById('cfg-api-key').focus();
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = '⏳ AI...';
-        transBox.innerText = '🤖 Se traduce cu AI în context...';
-
-        try {
-            const out = await runAIWordOrSelectionTranslation(target, context, true);
-            transBox.innerText = out ? `🤖 ${out}` : 'AI-ul nu a returnat o traducere.';
-        } catch (err) {
-            transBox.innerText = `Eroare AI: ${err.message}`;
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '🤖 Tradu cu AI';
-        }
-    }
-
-    async function translateSelection() {
-        const currentSel = (window.getSelection()?.toString() || '').trim();
-        const selected = currentSel || lastSavedSelection;
-        const transBox = document.getElementById('trans-box');
-        if (!selected) {
-            transBox.innerText = 'Selectează mai întâi un fragment de text.';
-            return;
-        }
-
-        lastTransTarget = selected;
-        lastTransContext = (document.getElementById('reader-display')?.innerText || '').slice(0, 260);
-
-        const cacheKey = `fast::${selected.replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 350)}`;
-        if (persistentCache[cacheKey]) {
-            transBox.innerText = `⚡ ${persistentCache[cacheKey]}`;
-            return;
-        }
-
-        transBox.innerText = '⚡ Se traduce...';
-        const out = await fastTranslate(selected);
-        transBox.innerText = out ? `⚡ ${out}` : 'Traducere indisponibilă momentan.';
-    }
-
-    async function trans(ev, el) {
-        if (ev) ev.stopPropagation();
-        const activeSel = (window.getSelection()?.toString() || '').trim();
-        if (activeSel.length > 1) return;
-
-        document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight-green'));
-        el.classList.add('highlight-green');
-
-        const rawWord = el.innerText.replace(/[.,!?;:()"'„“»«]/g, '').trim();
-        if (!rawWord) return;
-
-        lastTransTarget = rawWord;
-        lastTransContext = (el.parentElement?.innerText || document.getElementById('reader-display')?.innerText || '').slice(0, 260);
-
-        const transBox = document.getElementById('trans-box');
-        const cacheKey = `fast::${rawWord.toLowerCase()}`;
-        if (!config.
+    function playSelect() { let t = (window.getSelection()?.to
