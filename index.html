@@ -709,8 +709,28 @@
         if (!cleanKey) {
             throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
         }
-        const preferred = (config.model || 'gemini-2.5-flash').trim();
-        const candidates = [preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v, idx, arr) => v && arr.indexOf(v) === idx);
+
+        let availableModels = [];
+        try {
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
+            if (listRes.ok) {
+                const listData = await listRes.json();
+                availableModels = (listData.models || [])
+                    .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => String(m.name || '').replace(/^models\//, ''))
+                    .filter(Boolean);
+            } else if (listRes.status === 400 || listRes.status === 401 || listRes.status === 403) {
+                throw new Error(`Cheie API invalidă sau fără acces (${listRes.status}). Verifică cheia în ⚙️.`);
+            }
+        } catch (err) {
+            if (String(err.message || '').indexOf('Cheie API') === 0) throw err;
+        }
+
+        const preferred = (config.model || '').trim();
+        const fallbackList = [preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
+        const candidates = (availableModels.length ? [...availableModels, ...fallbackList] : fallbackList)
+            .filter((v, idx, arr) => v && arr.indexOf(v) === idx);
+
         const versions = ['v1beta', 'v1'];
         let lastStatus = '';
 
@@ -744,7 +764,9 @@
                 }
             }
         }
-        throw new Error(lastStatus || 'Răspuns indisponibil de la Gemini AI.');
+
+        const foundInfo = availableModels.length ? ` Modele găsite: ${availableModels.join(', ')}` : ' Nu s-au putut lista modelele.';
+        throw new Error((lastStatus || 'Niciun model nu a răspuns.') + foundInfo);
     }
 
     async function evaluateFreeLetterWithAI() {
