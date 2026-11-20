@@ -438,14 +438,23 @@
 <script>
     function readJSON(key, fallback) {
         try {
-            const raw = localStorage.getItem(key);
+            var raw = localStorage.getItem(key);
             return raw ? JSON.parse(raw) : fallback;
-        } catch {
+        } catch (err) {
             return fallback;
         }
     }
 
-    const DEFAULT_LETTERS = [
+    function getSelectedTextSafe() {
+        try {
+            var s = window.getSelection ? window.getSelection() : null;
+            return s ? String(s.toString() || '').trim() : '';
+        } catch (err) {
+            return '';
+        }
+    }
+
+    var DEFAULT_LETTERS = [
         {
             id: "termin-verschieben-sie",
             type: "Formal (Sie)",
@@ -530,68 +539,75 @@
         }
     ];
 
-    let db = readJSON('gm_db_v3', { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] });
-    let letters = readJSON('gm_letters_v1', DEFAULT_LETTERS);
+    var db = readJSON('gm_db_v3', { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] });
+    var letters = readJSON('gm_letters_v1', DEFAULT_LETTERS);
     if (!Array.isArray(letters) || letters.length === 0) letters = DEFAULT_LETTERS;
-    let config = readJSON('gm_config', { bg: '#f0f2f5', font: '22', rate: '1', model: 'gemini-2.5-flash' });
-    let geminiKey = (localStorage.getItem('gm_gemini_key') || '').trim();
-    const transCache = {};
+    var config = readJSON('gm_config', { bg: '#f0f2f5', font: '22', rate: '1', model: 'gemini-2.5-flash' });
+    var geminiKey = String(localStorage.getItem('gm_gemini_key') || '').trim();
+    var transCache = {};
 
-    let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
-    let lastRawBody = '', lastSetSize = 10, lastShuffle = true;
-    let skippedQuestions = [], wrongQuestions = [];
+    var curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
+    var lastRawBody = '', lastSetSize = 10, lastShuffle = true;
+    var skippedQuestions = [], wrongQuestions = [];
 
-    let activeLetterFilter = 'ALL';
-    let currentLetter = null;
-    let selectedLetterChoices = {};
+    var activeLetterFilter = 'ALL';
+    var currentLetter = null;
+    var selectedLetterChoices = {};
 
-    let appHistory = [];
-    let historyIdx = -1;
-    let isApplyingState = false;
-    let lastSavedSelection = '';
-    let lastTransTarget = '';
-    let lastTransContext = '';
+    var appHistory = [];
+    var historyIdx = -1;
+    var isApplyingState = false;
+    var lastSavedSelection = '';
+    var lastTransTarget = '';
+    var lastTransContext = '';
 
-    document.addEventListener('selectionchange', () => {
+    document.addEventListener('selectionchange', function() {
         try {
-            const sel = (window.getSelection()?.toString() || '').trim();
+            var sel = getSelectedTextSafe();
             if (sel.length > 0) {
                 lastSavedSelection = sel;
                 lastTransTarget = sel;
-                lastTransContext = (document.getElementById('reader-display')?.innerText || '').slice(0, 240);
-                const info = document.getElementById('last-target-info');
-                if (info) info.textContent = `Selecție: „${sel.slice(0, 40)}${sel.length > 40 ? '…' : ''}”`;
+                var rd = document.getElementById('reader-display');
+                lastTransContext = rd ? rd.innerText.slice(0, 240) : '';
+                var info = document.getElementById('last-target-info');
+                if (info) info.textContent = 'Selecție: „' + sel.slice(0, 40) + (sel.length > 40 ? '…' : '') + '”';
             }
-        } catch {}
+        } catch (err) {}
     });
 
     function syncFloatingBtn() {
         try {
-            const btn = document.getElementById('floating-translate-btn');
-            const workVisible = !document.getElementById('work-screen').classList.contains('hidden');
-            btn.classList.toggle('hidden', !workVisible);
-        } catch {}
+            var btn = document.getElementById('floating-translate-btn');
+            var ws = document.getElementById('work-screen');
+            var workVisible = ws && !ws.classList.contains('hidden');
+            if (btn) btn.classList.toggle('hidden', !workVisible);
+        } catch (err) {}
     }
 
     function hideAllScreens() {
-        ['home-screen', 'letters-list-screen', 'letters-work-screen', 'letters-free-screen', 'lvl-screen', 'work-screen'].forEach(id => {
-            const el = document.getElementById(id);
+        var ids = ['home-screen', 'letters-list-screen', 'letters-work-screen', 'letters-free-screen', 'lvl-screen', 'work-screen'];
+        for (var i = 0; i < ids.length; i++) {
+            var el = document.getElementById(ids[i]);
             if (el) el.classList.add('hidden');
-        });
+        }
         syncFloatingBtn();
     }
 
-    function saveState(screenId, title, qIdx = -1, letterId = null) {
+    function saveState(screenId, title, qIdx, letterId) {
+        if (typeof qIdx === 'undefined') qIdx = -1;
+        if (typeof letterId === 'undefined') letterId = null;
         if (isApplyingState) return;
         if (historyIdx < appHistory.length - 1) appHistory = appHistory.slice(0, historyIdx + 1);
-        appHistory.push({ screenId, title, curLvl, curTab, qIdx, letterId });
+        appHistory.push({ screenId: screenId, title: title, curLvl: curLvl, curTab: curTab, qIdx: qIdx, letterId: letterId });
         historyIdx++;
         updateNavButtons();
     }
 
     function updateNavButtons() {
-        document.getElementById('btn-nav-back').disabled = (historyIdx <= 0);
-        document.getElementById('btn-nav-forward').disabled = (historyIdx >= appHistory.length - 1);
+        var backBtn = document.getElementById('btn-nav-back');
+        var fwdBtn = document.getElementById('btn-nav-forward');
+        if (backBtn) backBtn.disabled = (historyIdx <= 0);
+        if (fwdBtn) fwdBtn.disabled = (historyIdx >= appHistory.length - 1);
     }
 
     function historyBack() {
@@ -612,7 +628,8 @@
         isApplyingState = true;
         stopAudio();
         hideAllScreens();
-        document.getElementById(state.screenId).classList.remove('hidden');
+        var scr = document.getElementById(state.screenId);
+        if (scr) scr.classList.remove('hidden');
         syncFloatingBtn();
         document.getElementById('nav-title').innerText = state.title;
         curLvl = state.curLvl || '';
@@ -647,7 +664,7 @@
             if (appHistory.length === 0) {
                 saveState('home-screen', 'GERMANA MASTER');
             }
-        } catch {}
+        } catch (err) {}
     }
 
     if (document.readyState === 'loading') {
@@ -684,39 +701,43 @@
     }
 
     function analyzeFreeLetter() {
-        const txt = (document.getElementById('free-letter-text')?.value || '').trim();
-        const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
-        const words = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
+        var txtEl = document.getElementById('free-letter-text');
+        var regEl = document.getElementById('free-register');
+        var txt = txtEl ? txtEl.value.trim() : '';
+        var reg = regEl ? regEl.value : 'Formal (Sie)';
+        var words = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
 
-        const hasGreeting = /(sehr geehrte|hallo|liebe|lieber|guten tag|hi)\b/i.test(txt);
-        const hasClosing = /(mit freundlichen grüßen|viele grüße|freundliche grüße|bis bald|tschüss|liebe grüße)/i.test(txt);
-        const usesSie = /\b(sie|ihnen|ihr|ihre|ihren|ihrem)\b/i.test(txt);
-        const usesDu = /\b(du|dir|dich|dein|deine|deinen|deinem)\b/i.test(txt);
-        const registerConsistent = reg === 'Formal (Sie)' ? !(usesDu && !usesSie) : !(usesSie && !usesDu);
-        const lengthOk = words >= 55;
+        var hasGreeting = /(sehr geehrte|hallo|liebe|lieber|guten tag|hi)\b/i.test(txt);
+        var hasClosing = /(mit freundlichen grüßen|viele grüße|freundliche grüße|bis bald|tschüss|liebe grüße)/i.test(txt);
+        var usesSie = /\b(sie|ihnen|ihr|ihre|ihren|ihrem)\b/i.test(txt);
+        var usesDu = /\b(du|dir|dich|dein|deine|deinen|deinem)\b/i.test(txt);
+        var registerConsistent = reg === 'Formal (Sie)' ? !(usesDu && !usesSie) : !(usesSie && !usesDu);
+        var lengthOk = words >= 55;
 
-        const checks = [
+        var checks = [
             { ok: hasGreeting, label: hasGreeting ? '✓ Salut prezent' : '• Adaugă o formulă de salut' },
             { ok: hasClosing, label: hasClosing ? '✓ Încheiere prezentă' : '• Adaugă o formulă de încheiere' },
-            { ok: registerConsistent, label: registerConsistent ? `✓ Registru aliniat (${reg})` : '• Atenție la amestecul du / Sie' },
-            { ok: lengthOk, label: `Lungime: ${words} cuvinte (orientativ ≥ 55 pentru B1)` }
+            { ok: registerConsistent, label: registerConsistent ? '✓ Registru aliniat (' + reg + ')' : '• Atenție la amestecul du / Sie' },
+            { ok: lengthOk, label: 'Lungime: ' + words + ' cuvinte (orientativ ≥ 55 pentru B1)' }
         ];
 
-        const box = document.getElementById('free-checks');
+        var box = document.getElementById('free-checks');
         if (box) {
-            box.innerHTML = checks.map(c =>
-                `<div class="check-item ${c.ok ? 'check-ok' : 'check-warn'}">${c.label}</div>`
-            ).join('');
+            box.innerHTML = checks.map(function(c) {
+                return '<div class="check-item ' + (c.ok ? 'check-ok' : 'check-warn') + '">' + c.label + '</div>';
+            }).join('');
         }
     }
 
     async function askGeminiText(prompt) {
-        const cleanKey = (geminiKey || '').trim();
+        var cleanKey = String(geminiKey || '').trim();
         if (!cleanKey) throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
-        const m = (config.model || 'gemini-2.5-flash').trim();
-        for (const ver of ['v1beta', 'v1']) {
-            const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
-            const res = await fetch(url, {
+        var m = String(config.model || 'gemini-2.5-flash').trim();
+        var versions = ['v1beta', 'v1'];
+        for (var i = 0; i < versions.length; i++) {
+            var ver = versions[i];
+            var url = 'https://generativelanguage.googleapis.com/' + ver + '/models/' + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(cleanKey);
+            var res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -725,8 +746,10 @@
                 })
             });
             if (res.ok) {
-                const data = await res.json();
-                const out = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+                var data = await res.json();
+                var cand = data && data.candidates && data.candidates[0];
+                var part = cand && cand.content && cand.content.parts && cand.content.parts[0];
+                var out = part && part.text ? String(part.text).trim() : '';
                 if (out) return out;
             }
         }
@@ -734,11 +757,15 @@
     }
 
     async function evaluateFreeLetterWithAI() {
-        const topic = (document.getElementById('free-topic')?.value || '').trim();
-        const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
-        const letter = (document.getElementById('free-letter-text')?.value || '').trim();
-        const outBox = document.getElementById('free-ai-output');
-        const btn = document.getElementById('btn-eval-letter-ai');
+        var topicEl = document.getElementById('free-topic');
+        var regEl = document.getElementById('free-register');
+        var letterEl = document.getElementById('free-letter-text');
+        var outBox = document.getElementById('free-ai-output');
+        var btn = document.getElementById('btn-eval-letter-ai');
+
+        var topic = topicEl ? topicEl.value.trim() : '';
+        var reg = regEl ? regEl.value : 'Formal (Sie)';
+        var letter = letterEl ? letterEl.value.trim() : '';
 
         if (!letter) { alert('Scrie mai întâi textul scrisorii.'); return; }
         if (!geminiKey) {
@@ -752,10 +779,10 @@
         outBox.classList.remove('hidden');
         outBox.textContent = 'Se evaluează scrisoarea pentru nivelul B1...';
 
-        const prompt = [
+        var prompt = [
             'Evaluează următoarea scrisoare în germană pentru nivelul B1 și răspunde în română:',
-            topic ? `Tema: ${topic}` : 'Tema: liberă',
-            `Registru: ${reg}`,
+            topic ? 'Tema: ' + topic : 'Tema: liberă',
+            'Registru: ' + reg,
             '1) Notă estimativă și nivel CEFR (dacă este suficient pentru B1)',
             '2) Greșeli găsite și cum se corectează',
             '3) Ce mai trebuie îmbunătățit',
@@ -768,7 +795,7 @@
         try {
             outBox.textContent = await askGeminiText(prompt);
         } catch (e) {
-            outBox.textContent = 'Eroare AI: ' + (e?.message || 'necunoscută');
+            outBox.textContent = 'Eroare AI: ' + (e && e.message ? e.message : 'necunoscută');
         } finally {
             btn.disabled = false;
             btn.textContent = '🤖 Evaluează cu AI';
@@ -776,20 +803,20 @@
     }
 
     async function copyForB1Grading() {
-        const topic = (document.getElementById('free-topic')?.value || '').trim();
-        const reg = document.getElementById('free-register')?.value || 'Formal (Sie)';
-        const letter = (document.getElementById('free-letter-text')?.value || '').trim();
-        const statusEl = document.getElementById('free-status');
+        var topic = document.getElementById('free-topic').value.trim();
+        var reg = document.getElementById('free-register').value;
+        var letter = document.getElementById('free-letter-text').value.trim();
+        var statusEl = document.getElementById('free-status');
 
         if (!letter) {
             alert('Scrie mai întâi textul scrisorii.');
             return;
         }
 
-        const prompt = [
+        var prompt = [
             'Evaluează următoarea scrisoare în limba germană pentru nivelul B1.',
-            topic ? `Tema/cerința: ${topic}` : 'Tema/cerința: liberă',
-            `Registru dorit: ${reg}`,
+            topic ? 'Tema/cerința: ' + topic : 'Tema/cerința: liberă',
+            'Registru dorit: ' + reg,
             'Te rog să îmi spui:',
             '1) Ce notă/calificativ estimativ ar primi și ce nivel CEFR reflectă.',
             '2) Unde este greșit (gramatică, topică, ortografie, registru Sie/du, formulări) și cum se corectează.',
@@ -803,8 +830,8 @@
         try {
             await navigator.clipboard.writeText(prompt);
             statusEl.textContent = '✓ Promptul + scrisoarea au fost copiate.';
-        } catch {
-            const ta = document.createElement('textarea');
+        } catch (err) {
+            var ta = document.createElement('textarea');
             ta.value = prompt;
             document.body.appendChild(ta);
             ta.select();
@@ -818,49 +845,56 @@
         if (!confirm('Ștergi scrisoarea scrisă?')) return;
         document.getElementById('free-letter-text').value = '';
         document.getElementById('free-status').textContent = '';
-        document.getElementById('free-ai-output').classList.add('hidden');
-        document.getElementById('free-ai-output').textContent = '';
+        var aiOut = document.getElementById('free-ai-output');
+        aiOut.classList.add('hidden');
+        aiOut.textContent = '';
         analyzeFreeLetter();
     }
 
     function filterLetters(type, btn) {
         activeLetterFilter = type;
-        document.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+        var chips = document.querySelectorAll('.chip');
+        for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
         if (btn) btn.classList.add('active');
         renderLettersList();
     }
 
     function renderLettersList() {
-        const box = document.getElementById('letter-lesson-list');
-        const items = activeLetterFilter === 'ALL'
+        var box = document.getElementById('letter-lesson-list');
+        var items = activeLetterFilter === 'ALL'
             ? letters
-            : letters.filter(l => l.type === activeLetterFilter);
+            : letters.filter(function(l) { return l.type === activeLetterFilter; });
 
-        box.innerHTML = items.map(l => `
-            <div class="lesson-row" onclick="openLetterLesson('${l.id}')">
-                <div>
-                    <span class="hub-badge">${l.type} • ${l.badge}</span>
-                    <div style="font-weight:700; font-size:16px;">${l.title}</div>
-                    <div style="font-size:13px; color:var(--text-muted); margin-top:3px;">${l.description}</div>
-                </div>
-                <div class="lesson-row-actions">
-                    <button class="lvl-btn active-lvl btn-sm" type="button" onclick="event.stopPropagation(); openLetterLesson('${l.id}')">Deschide</button>
-                    <button class="del-btn" type="button" title="Șterge lecția" onclick="delLetterLesson(event, '${l.id}')">X</button>
-                </div>
-            </div>
-        `).join('') || '<p style="text-align:center;">Nu există lecții în acest filtru.</p>';
+        box.innerHTML = items.map(function(l) {
+            return (
+                '<div class="lesson-row" onclick="openLetterLesson(\'' + l.id + '\')">' +
+                    '<div>' +
+                        '<span class="hub-badge">' + l.type + ' • ' + l.badge + '</span>' +
+                        '<div style="font-weight:700; font-size:16px;">' + l.title + '</div>' +
+                        '<div style="font-size:13px; color:var(--text-muted); margin-top:3px;">' + l.description + '</div>' +
+                    '</div>' +
+                    '<div class="lesson-row-actions">' +
+                        '<button class="lvl-btn active-lvl btn-sm" type="button" onclick="event.stopPropagation(); openLetterLesson(\'' + l.id + '\')">Deschide</button>' +
+                        '<button class="del-btn" type="button" title="Șterge lecția" onclick="delLetterLesson(event, \'' + l.id + '\')">X</button>' +
+                    '</div>' +
+                '</div>'
+            );
+        }).join('') || '<p style="text-align:center;">Nu există lecții în acest filtru.</p>';
     }
 
     function delLetterLesson(ev, id) {
         if (ev) ev.stopPropagation();
         if (!confirm('Ștergi această lecție de scrisoare?')) return;
-        letters = letters.filter(l => l.id !== id);
+        letters = letters.filter(function(l) { return l.id !== id; });
         localStorage.setItem('gm_letters_v1', JSON.stringify(letters));
         renderLettersList();
     }
 
-    function openLetterLesson(id, skipHistory = false) {
-        const found = letters.find(l => l.id === id);
+    function openLetterLesson(id, skipHistory) {
+        var found = null;
+        for (var i = 0; i < letters.length; i++) {
+            if (letters[i].id === id) { found = letters[i]; break; }
+        }
         if (!found) return;
         currentLetter = found;
         selectedLetterChoices = {};
@@ -869,7 +903,7 @@
         hideAllScreens();
         document.getElementById('letters-work-screen').classList.remove('hidden');
         document.getElementById('nav-title').innerText = found.title;
-        document.getElementById('l-tag').textContent = `${found.type} • ${found.badge}`;
+        document.getElementById('l-tag').textContent = found.type + ' • ' + found.badge;
         document.getElementById('l-title').textContent = found.title;
         document.getElementById('l-desc').textContent = found.description;
 
@@ -882,61 +916,62 @@
     }
 
     function renderLetterSteps() {
-        const container = document.getElementById('steps-container');
-        container.innerHTML = currentLetter.steps.map((step, sIdx) => {
-            const optsHtml = step.options.map((opt, oIdx) => `
-                <button class="choice-btn" id="lopt-${sIdx}-${oIdx}" type="button" onclick="pickLetterOption(${sIdx}, ${oIdx})">
-                    ${opt.text.replace(/\n/g, '<br>')}
-                </button>
-            `).join('');
+        var container = document.getElementById('steps-container');
+        container.innerHTML = currentLetter.steps.map(function(step, sIdx) {
+            var optsHtml = step.options.map(function(opt, oIdx) {
+                return '<button class="choice-btn" id="lopt-' + sIdx + '-' + oIdx + '" type="button" onclick="pickLetterOption(' + sIdx + ', ' + oIdx + ')">' +
+                    opt.text.replace(/\n/g, '<br>') +
+                '</button>';
+            }).join('');
 
-            return `
-                <div class="step-box">
-                    <div class="step-title">${step.label}</div>
-                    <div class="step-hint">${step.hintRo}</div>
-                    <div class="choice-list">${optsHtml}</div>
-                    <div class="expl" id="lexpl-${sIdx}"></div>
-                </div>
-            `;
+            return (
+                '<div class="step-box">' +
+                    '<div class="step-title">' + step.label + '</div>' +
+                    '<div class="step-hint">' + step.hintRo + '</div>' +
+                    '<div class="choice-list">' + optsHtml + '</div>' +
+                    '<div class="expl" id="lexpl-' + sIdx + '"></div>' +
+                '</div>'
+            );
         }).join('');
     }
 
     function pickLetterOption(sIdx, oIdx) {
-        const step = currentLetter.steps[sIdx];
-        const chosen = step.options[oIdx];
+        var step = currentLetter.steps[sIdx];
+        var chosen = step.options[oIdx];
         selectedLetterChoices[sIdx] = chosen;
 
-        step.options.forEach((opt, idx) => {
-            const btn = document.getElementById(`lopt-${sIdx}-${idx}`);
+        for (var idx = 0; idx < step.options.length; idx++) {
+            var opt = step.options[idx];
+            var btn = document.getElementById('lopt-' + sIdx + '-' + idx);
             btn.classList.remove('ok', 'bad');
             if (idx === oIdx) {
                 btn.classList.add(opt.correct ? 'ok' : 'bad');
             }
-        });
+        }
 
-        const explEl = document.getElementById(`lexpl-${sIdx}`);
+        var explEl = document.getElementById('lexpl-' + sIdx);
         explEl.style.color = chosen.correct ? '#155724' : '#721c24';
         explEl.textContent = (chosen.correct ? '✓ Corect: ' : '✕ Atenție: ') + chosen.why;
         updateAssembledLetter();
     }
 
     function updateAssembledLetter() {
-        const box = document.getElementById('assembled-letter');
-        const lastIdx = currentLetter.steps.length - 1;
-        const pickedIndices = Object.keys(selectedLetterChoices).map(Number).sort((a, b) => a - b);
+        var box = document.getElementById('assembled-letter');
+        var lastIdx = currentLetter.steps.length - 1;
+        var pickedIndices = Object.keys(selectedLetterChoices).map(Number).sort(function(a, b) { return a - b; });
 
         if (!pickedIndices.length) {
             box.textContent = 'Alege variantele de mai sus pentru a vedea scrisoarea formându-se.';
             return;
         }
 
-        const greeting = selectedLetterChoices[0]?.text || '';
-        const bodyParts = pickedIndices
-            .filter(idx => idx > 0 && idx < lastIdx)
-            .map(idx => selectedLetterChoices[idx].text);
-        const closing = lastIdx > 0 ? selectedLetterChoices[lastIdx]?.text : '';
+        var greeting = selectedLetterChoices[0] ? selectedLetterChoices[0].text : '';
+        var bodyParts = pickedIndices
+            .filter(function(idx) { return idx > 0 && idx < lastIdx; })
+            .map(function(idx) { return selectedLetterChoices[idx].text; });
+        var closing = (lastIdx > 0 && selectedLetterChoices[lastIdx]) ? selectedLetterChoices[lastIdx].text : '';
 
-        const lines = [];
+        var lines = [];
         if (greeting) lines.push(greeting);
         if (bodyParts.length) lines.push(bodyParts.join(' '));
         if (closing) lines.push(closing);
@@ -944,13 +979,13 @@
     }
 
     async function copyLetter() {
-        const text = document.getElementById('assembled-letter').textContent;
-        const statusEl = document.getElementById('copy-status');
+        var text = document.getElementById('assembled-letter').textContent;
+        var statusEl = document.getElementById('copy-status');
         try {
             await navigator.clipboard.writeText(text);
             statusEl.textContent = '✓ Scrisoarea a fost copiată.';
-        } catch {
-            const ta = document.createElement('textarea');
+        } catch (err) {
+            var ta = document.createElement('textarea');
             ta.value = text;
             document.body.appendChild(ta);
             ta.select();
@@ -973,304 +1008,24 @@
     }
 
     function saveLetterLesson() {
-        const title = document.getElementById('let-title').value.trim();
-        const type = document.getElementById('let-type').value;
-        const badge = document.getElementById('let-badge').value.trim() || 'B1';
-        const description = document.getElementById('let-desc').value.trim() || 'Lecție adăugată de tine.';
-        const rawSteps = document.getElementById('let-steps').value.trim();
+        var title = document.getElementById('let-title').value.trim();
+        var type = document.getElementById('let-type').value;
+        var badge = document.getElementById('let-badge').value.trim() || 'B1';
+        var description = document.getElementById('let-desc').value.trim() || 'Lecție adăugată de tine.';
+        var rawSteps = document.getElementById('let-steps').value.trim();
 
         if (!title || !rawSteps) {
             alert('Completează titlul și pașii lecției.');
             return;
         }
 
-        const parsedSteps = rawSteps.split(/\n\s*---\s*\n/).map((block, idx) => {
-            const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-            const headerParts = (lines[0] || `Pasul ${idx + 1}`).split('|').map(s => s.trim());
-            const label = headerParts[0] || `Pasul ${idx + 1}`;
-            const hintRo = headerParts[1] || 'Alege varianta potrivită.';
+        var parsedSteps = rawSteps.split(/\n\s*---\s*\n/).map(function(block, idx) {
+            var lines = block.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+            var headerParts = (lines[0] || ('Pasul ' + (idx + 1))).split('|').map(function(s) { return s.trim(); });
+            var label = headerParts[0] || ('Pasul ' + (idx + 1));
+            var hintRo = headerParts[1] || 'Alege varianta potrivită.';
 
-            const options = lines.slice(1).map(line => {
-                const p = line.split('|').map(s => s.trim());
+            var options = lines.slice(1).map(function(line) {
+                var p = line.split('|').map(function(s) { return s.trim(); });
                 return {
-                    text: (p[0] || '').replace(/\\n/g, '\n'),
-                    correct: (p[1] || '').toLowerCase() === 'true',
-                    why: p[2] || ''
-                };
-            }).filter(o => o.text);
-
-            return { label, hintRo, options };
-        }).filter(s => s.options.length > 0);
-
-        if (!parsedSteps.length) {
-            alert('Verifică formatul pașilor.');
-            return;
-        }
-
-        letters.push({
-            id: 'custom-' + Date.now(),
-            type,
-            badge,
-            title,
-            description,
-            steps: parsedSteps
-        });
-
-        localStorage.setItem('gm_letters_v1', JSON.stringify(letters));
-        document.getElementById('let-title').value = '';
-        document.getElementById('let-badge').value = '';
-        document.getElementById('let-desc').value = '';
-        document.getElementById('let-steps').value = '';
-        toggleSet();
-        if (!document.getElementById('letters-list-screen').classList.contains('hidden')) {
-            renderLettersList();
-        }
-        alert('Lecția de scrisoare a fost salvată!');
-    }
-
-    function checkResume() {
-        const resume = localStorage.getItem('gm_last_test');
-        document.getElementById('resume-container').classList.toggle('hidden', !resume);
-    }
-
-    function resumeTest() {
-        const saved = readJSON('gm_last_test', null);
-        if (!saved) return;
-        curSession = saved.session; curIdx = saved.idx; score = saved.score;
-        lastRawBody = saved.raw; lastSetSize = saved.size;
-        lastShuffle = saved.shuffle !== undefined ? saved.shuffle : true;
-        skippedQuestions = saved.skipped || [];
-        wrongQuestions = saved.wrong || [];
-        hideAllScreens();
-        document.getElementById('work-screen').classList.remove('hidden');
-        syncFloatingBtn();
-        document.getElementById('test-ui').classList.remove('hidden');
-        showQ();
-    }
-
-    function saveProgress() {
-        localStorage.setItem('gm_last_test', JSON.stringify({
-            session: curSession, idx: curIdx, score: score, raw: lastRawBody,
-            size: lastSetSize, shuffle: lastShuffle,
-            skipped: skippedQuestions, wrong: wrongQuestions
-        }));
-    }
-
-    function saveApiKey() {
-        geminiKey = document.getElementById('cfg-api-key').value.trim();
-        document.getElementById('cfg-api-key').value = geminiKey;
-        const msg = document.getElementById('ai-key-msg');
-        if (geminiKey) {
-            localStorage.setItem('gm_gemini_key', geminiKey);
-            msg.textContent = '✓ Cheia Gemini API a fost salvată.';
-        } else {
-            localStorage.removeItem('gm_gemini_key');
-            msg.textContent = 'Cheia API a fost ștearsă.';
-        }
-    }
-
-    function loadCfg() {
-        document.getElementById('cfg-bg').value = config.bg || '#f0f2f5';
-        document.getElementById('cfg-f1').value = config.font || '22';
-        document.getElementById('cfg-rate').value = config.rate || '1';
-        document.getElementById('cfg-model').value = config.model || 'gemini-2.5-flash';
-        document.getElementById('cfg-api-key').value = geminiKey;
-        if (geminiKey) {
-            document.getElementById('ai-key-msg').textContent = '✓ Cheia Gemini API este salvată.';
-        }
-        applyCfg(false);
-    }
-
-    function applyCfg(save = true) {
-        config.bg = document.getElementById('cfg-bg').value;
-        config.font = document.getElementById('cfg-f1').value;
-        config.rate = document.getElementById('cfg-rate').value;
-        config.model = document.getElementById('cfg-model').value;
-        document.getElementById('val-f1').innerText = config.font;
-        document.body.style.background = config.bg;
-        document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
-        if (save) localStorage.setItem('gm_config', JSON.stringify(config));
-    }
-
-    function openLvl(l) {
-        curLvl = l;
-        hideAllScreens();
-        document.getElementById('lvl-screen').classList.remove('hidden');
-        document.getElementById('nav-title').innerText = 'Nivel ' + l;
-        switchTab('L');
-        saveState('lvl-screen', 'Nivel ' + l);
-    }
-
-    function updateTabButtons() {
-        document.getElementById('tab-btn-L').classList.toggle('active-lvl', curTab === 'L');
-        document.getElementById('tab-btn-T').classList.toggle('active-lvl', curTab === 'T');
-    }
-
-    function switchTab(t) {
-        curTab = t;
-        updateTabButtons();
-        renderList();
-    }
-
-    function renderList() {
-        const container = document.getElementById('content-list');
-        const items = (db[curLvl] || []).filter(i => i.type === curTab);
-        container.innerHTML = items.map((item) => {
-            const realIdx = db[curLvl].indexOf(item);
-            return `
-                <div style="padding:15px; background:#fff; border-radius:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
-                    <span onclick="startWork('${curLvl}', ${realIdx})" style="cursor:pointer; flex:1; font-weight:bold;">${curTab==='L'?'📄':'🧠'} ${item.title}</span>
-                    <button class="del-btn" type="button" onclick="delItem('${curLvl}', ${realIdx})">X</button>
-                </div>
-            `;
-        }).join('') || '<p style="text-align:center;">Nu există materiale încă aici.</p>';
-    }
-
-    function startWork(l, idx) {
-        const item = db[l][idx];
-        if (!item) return;
-        lastSavedSelection = '';
-        lastTransTarget = '';
-        lastTransContext = '';
-        const info = document.getElementById('last-target-info');
-        if (info) info.textContent = '';
-        hideAllScreens();
-        document.getElementById('work-screen').classList.remove('hidden');
-        syncFloatingBtn();
-        document.getElementById('btn-back-main').classList.remove('hidden');
-        document.getElementById('next-ui').classList.add('hidden');
-        document.getElementById('skip-ui').classList.add('hidden');
-        if (item.type === 'L') {
-            document.getElementById('audio-ui').classList.remove('hidden');
-            document.getElementById('test-ui').classList.add('hidden');
-            renderReading(item.body);
-            saveState('work-screen', item.title);
-        } else {
-            document.getElementById('audio-ui').classList.add('hidden');
-            document.getElementById('test-ui').classList.remove('hidden');
-            lastRawBody = item.body;
-            askSize();
-            saveState('work-screen', 'Alege dimensiune test');
-        }
-    }
-
-    function askSize() {
-        skippedQuestions = [];
-        wrongQuestions = [];
-        const poolCount = lastRawBody.split('\n').filter(l => l.includes('|')).length;
-        document.getElementById('reader-display').innerHTML = `<h3>Câte întrebări dorești?</h3><p style="font-size:15px; color:#555; margin-top:-5px;">Total întrebări disponibile: <b>${poolCount}</b></p>`;
-        document.getElementById('test-ui').innerHTML = `
-            <div style="margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 16px; font-weight: bold; color: #333;">🔀 Amestecă întrebările (Random)</span>
-                <input type="checkbox" id="shuffle-toggle" checked style="width: 22px; height: 22px; accent-color: var(--main-green); cursor: pointer;">
-            </div>
-            <button class="lvl-btn active-lvl" type="button" style="width:100%; margin-bottom:12px; background:#007bff" onclick="initSmartTestFromPrompt(999)">♾️ FĂRĂ LIMITĂ (PÂNĂ LA FINAL)</button>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="lvl-btn active-lvl" type="button" onclick="initSmartTestFromPrompt(5)">5</button>
-                <button class="lvl-btn active-lvl" type="button" onclick="initSmartTestFromPrompt(10)">10</button>
-                <button class="lvl-btn active-lvl" type="button" onclick="initSmartTestFromPrompt(15)">15</button>
-                <button class="lvl-btn active-lvl" type="button" onclick="initSmartTestFromPrompt(20)">20</button>
-            </div>`;
-    }
-
-    function initSmartTestFromPrompt(sizeOption) {
-        const shuffle = document.getElementById('shuffle-toggle').checked;
-        initSmartTest(lastRawBody, sizeOption, shuffle);
-    }
-
-    function initSmartTest(raw, size, shuffle = true) {
-        lastSetSize = size;
-        lastShuffle = shuffle;
-        skippedQuestions = [];
-        wrongQuestions = [];
-        let pool = raw.split('\n').filter(l => l.includes('|')).map(line => {
-            const p = line.split('|').map(x => x.trim());
-            const q = p[0], cor = p[1];
-            let variants = p.slice(1), expl = '';
-            if (p.length > 3 && (p[p.length - 1].length > 10 || p[p.length - 1].includes(' '))) {
-                expl = p[p.length - 1]; variants = p.slice(1, p.length - 1);
-            }
-            return { q, cor, expl, all: variants };
-        });
-
-        if (shuffle) pool = pool.sort(() => 0.5 - Math.random());
-        curSession = pool.slice(0, size);
-        curIdx = 0; score = 0; saveProgress(); showQ();
-    }
-
-    function showQ(skipHistory = false) {
-        document.getElementById('trans-box').innerText = 'Apasă pe cuvinte pentru traducere';
-        document.getElementById('expl-container').style.display = 'none';
-        document.getElementById('next-ui').classList.add('hidden');
-        document.getElementById('skip-ui').classList.remove('hidden');
-        document.getElementById('btn-back-main').classList.remove('hidden');
-
-        if (!skipHistory && curIdx < curSession.length) {
-            saveState('work-screen', `Întrebarea ${curIdx + 1}`, curIdx);
-        }
-
-        if (curIdx >= curSession.length) {
-            if (skippedQuestions.length > 0) {
-                curSession = [...skippedQuestions];
-                skippedQuestions = [];
-                curIdx = 0;
-                saveProgress();
-                showQ();
-                return;
-            }
-
-            localStorage.removeItem('gm_last_test');
-            checkResume();
-            document.getElementById('reader-display').innerHTML = `<h2>Final! Scor: ${score} / ${curSession.length}</h2>`;
-            document.getElementById('btn-back-main').classList.add('hidden');
-            document.getElementById('skip-ui').classList.add('hidden');
-
-            let extraButtons = '';
-            if (wrongQuestions.length > 0) {
-                extraButtons += `<button class="lvl-btn active-lvl" type="button" style="width:100%; margin-bottom:12px; background:#dc3545;" onclick="retryWrong()">🔁 REFĂ DOAR ÎNTREBĂRILE GREȘITE (${wrongQuestions.length})</button>`;
-            }
-
-            document.getElementById('test-ui').innerHTML = `
-                ${extraButtons}
-                <button class="lvl-btn active-lvl" type="button" style="width:100%; margin-bottom:12px" onclick="initSmartTest(lastRawBody, lastSetSize, lastShuffle)">🚀 URMĂTORUL SET</button>
-                <button class="lvl-btn" type="button" style="width:100%; background:#6c757d" onclick="backToList()">⬅️ ÎNAPOI LA LISTĂ</button>`;
-            return;
-        }
-
-        const itm = curSession[curIdx];
-        let qHtml = itm.q.split(/\s+/).map(w => w === '___'
-            ? '<span id="answer-slot" class="blank-space">...</span>'
-            : `<span class="word" onclick="trans(event, this)">${w}</span>`
-        ).join(' ');
-        if (!itm.q.includes('___')) qHtml += ' <span id="answer-slot" class="blank-space">...</span>';
-        document.getElementById('reader-display').innerHTML = `<h3>${qHtml}</h3>`;
-
-        const html = [...itm.all].sort(() => 0.5 - Math.random()).map(o => {
-            const optionWords = o.split(/\s+/).map(ow => `<span class="word" onclick="trans(event, this)">${ow}</span>`).join(' ');
-            const safeO = o.replace(/'/g, "\\'");
-            const safeCor = itm.cor.replace(/'/g, "\\'");
-            return `<div class="test-opt" onclick="evalAns(event, this, '${safeO}', '${safeCor}')"><div>${optionWords}</div></div>`;
-        }).join('');
-        document.getElementById('test-ui').innerHTML = html;
-    }
-
-    function skipQ() {
-        const itm = curSession[curIdx];
-        skippedQuestions.push(itm);
-        curIdx++;
-        saveProgress();
-        showQ();
-    }
-
-    function revealCorrect() {
-        const itm = curSession[curIdx];
-        const options = document.querySelectorAll('.test-opt');
-        options.forEach(o => {
-            o.style.pointerEvents = 'none';
-            if (o.innerText.trim() === itm.cor.trim()) o.classList.add('ans-correct');
-        });
-        document.getElementById('skip-ui').classList.add('hidden');
-        const slot = document.getElementById('answer-slot');
-        if (slot) {
-            slot.innerText = itm.cor;
-            slot.style.color =
+                    text: (p[0] || '').replace(/\\n/g, '\n
