@@ -339,7 +339,7 @@
         <span class="hub-badge">Atelier Liber B1</span>
         <h2 style="margin:4px 0 6px 0;">✍️ Scrie scrisoarea ta în germană</h2>
         <p style="color:var(--text-muted); margin:0 0 12px 0; font-size:14px;">
-            Scrie scrisoarea aici și apasă <b>Evaluează cu AI</b> pentru rubrica de verificare și notare B1, sau <b>Copiază pentru evaluare B1</b>.
+            Scrie scrisoarea aici și apasă <b>Evaluează cu AI</b> pentru notare și corectură scurtă în română, sau <b>Copiază pentru evaluare B1</b>.
         </p>
 
         <label style="font-weight:700; font-size:13px; display:block; margin-bottom:4px;">Tema / Cerința (opțional)</label>
@@ -547,6 +547,7 @@
     if (!Array.isArray(letters) || letters.length === 0) letters = DEFAULT_LETTERS;
     let config = JSON.parse(localStorage.getItem('gm_config')) || { bg: '#f0f2f5', font: '22', rate: '1', model: 'gemini-2.5-flash' };
     let geminiKey = (localStorage.getItem('gm_gemini_key') || '').trim();
+    let cachedWorkingAI = JSON.parse(localStorage.getItem('gm_working_ai') || 'null');
     const transCache = {};
 
     let curLvl = '', curTab = 'L', curSession = [], curIdx = 0, score = 0, synth = window.speechSynthesis;
@@ -564,12 +565,19 @@
     let lastTransTarget = '';
     let lastTransContext = '';
 
+    function cleanAIOutput(raw) {
+        return String(raw || '')
+            .replace(/\*\*/g, '')
+            .replace(/^\s*#{1,4}\s*/gm, '')
+            .trim();
+    }
+
     document.addEventListener('selectionchange', () => {
         const sel = window.getSelection().toString().trim();
         if (sel.length > 0) {
             lastSavedSelection = sel;
             lastTransTarget = sel;
-            lastTransContext = document.getElementById('reader-display').innerText.slice(0, 240);
+            lastTransContext = document.getElementById('reader-display').innerText.slice(0, 200);
             const info = document.getElementById('last-target-info');
             if (info) info.textContent = `Selecție: „${sel.slice(0, 40)}${sel.length > 40 ? '…' : ''}”`;
         }
@@ -704,60 +712,62 @@
         ).join('');
     }
 
-    async function callGemini(promptText) {
+    async function requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction) {
+        const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+        const payload = {
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: { temperature: 0.15 }
+        };
+        if (systemInstruction && ver === 'v1beta') {
+            payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+        }
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const textOut = cleanAIOutput(data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+            if (textOut) return textOut;
+            throw new Error('Răspuns gol de la AI.');
+        }
+        if (res.status === 401 || res.status === 403) {
+            throw new Error(`Cheie API neautorizată (${res.status}). Verifică cheia din ⚙️.`);
+        }
+        throw new Error(`HTTP ${res.status} (${ver}/${modelName})`);
+    }
+
+    async function callGemini(promptText, systemInstruction = '') {
         const cleanKey = (geminiKey || '').trim();
         if (!cleanKey) {
             throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
         }
 
-        let availableModels = [];
-        try {
-            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
-            if (listRes.ok) {
-                const listData = await listRes.json();
-                availableModels = (listData.models || [])
-                    .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-                    .map(m => String(m.name || '').replace(/^models\//, ''))
-                    .filter(Boolean);
-            } else if (listRes.status === 400 || listRes.status === 401 || listRes.status === 403) {
-                throw new Error(`Cheie API invalidă sau fără acces (${listRes.status}). Verifică cheia în ⚙️.`);
+        if (cachedWorkingAI && cachedWorkingAI.ver && cachedWorkingAI.model) {
+            try {
+                return await requestModelEndpoint(cachedWorkingAI.ver, cachedWorkingAI.model, cleanKey, promptText, systemInstruction);
+            } catch (err) {
+                if (String(err.message || '').indexOf('Cheie API') === 0) throw err;
+                cachedWorkingAI = null;
+                localStorage.removeItem('gm_working_ai');
             }
-        } catch (err) {
-            if (String(err.message || '').indexOf('Cheie API') === 0) throw err;
         }
 
-        const preferred = (config.model || '').trim();
-        const fallbackList = [preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
-        const candidates = (availableModels.length ? [...availableModels, ...fallbackList] : fallbackList)
-            .filter((v, idx, arr) => v && arr.indexOf(v) === idx);
-
+        const preferred = (config.model || 'gemini-2.5-flash').trim();
+        const fallbackModels = [preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v, idx, arr) => v && arr.indexOf(v) === idx);
         const versions = ['v1beta', 'v1'];
         let lastStatus = '';
 
         for (let v = 0; v < versions.length; v++) {
-            for (let m = 0; m < candidates.length; m++) {
+            for (let m = 0; m < fallbackModels.length; m++) {
                 const ver = versions[v];
-                const modelName = candidates[m];
-                const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+                const modelName = fallbackModels[m];
                 try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: promptText }] }],
-                            generationConfig: { temperature: 0.2 }
-                        })
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const textOut = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
-                        if (textOut) return textOut;
-                    } else {
-                        lastStatus = `HTTP ${res.status} (${ver}/${modelName})`;
-                        if (res.status === 401 || res.status === 403) {
-                            throw new Error(`Cheie API neautorizată (${res.status}). Verifică cheia din ⚙️.`);
-                        }
-                    }
+                    const out = await requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction);
+                    cachedWorkingAI = { ver, model: modelName };
+                    localStorage.setItem('gm_working_ai', JSON.stringify(cachedWorkingAI));
+                    return out;
                 } catch (err) {
                     if (String(err.message || '').indexOf('Cheie API') === 0) throw err;
                     lastStatus = err.message || 'Eroare rețea';
@@ -765,8 +775,26 @@
             }
         }
 
-        const foundInfo = availableModels.length ? ` Modele găsite: ${availableModels.join(', ')}` : ' Nu s-au putut lista modelele.';
-        throw new Error((lastStatus || 'Niciun model nu a răspuns.') + foundInfo);
+        try {
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
+            if (listRes.ok) {
+                const listData = await listRes.json();
+                const found = (listData.models || [])
+                    .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => String(m.name || '').replace(/^models\//, ''))
+                    .filter(Boolean);
+                for (let i = 0; i < found.length; i++) {
+                    try {
+                        const out = await requestModelEndpoint('v1beta', found[i], cleanKey, promptText, systemInstruction);
+                        cachedWorkingAI = { ver: 'v1beta', model: found[i] };
+                        localStorage.setItem('gm_working_ai', JSON.stringify(cachedWorkingAI));
+                        return out;
+                    } catch {}
+                }
+            }
+        } catch {}
+
+        throw new Error(lastStatus || 'Răspuns indisponibil de la AI.');
     }
 
     async function evaluateFreeLetterWithAI() {
@@ -789,27 +817,25 @@
         btn.disabled = true;
         btn.textContent = '⏳ Se evaluează...';
         outBox.classList.remove('hidden');
-        outBox.textContent = 'Se analizează scrisoarea și se generează rubrica de verificare B1...';
+        outBox.textContent = 'Se analizează scrisoarea...';
 
+        const sysPrompt = 'Ești profesor de germană B1. Răspunde STRICT în limba română (fără engleză, fără asteriscuri, fără variante alternative multiple). Fii scurt, clar și direct.';
         const prompt = [
-            'Evaluează următoarea scrisoare în limba germană pentru nivelul B1 și răspunde în română, structurat clar:',
-            topic ? `Tema / cerința: ${topic}` : 'Tema / cerința: liberă',
-            `Registru vizat: ${reg}`,
-            '',
-            'RUBRICĂ DE VERIFICARE ȘI NOTARE B1:',
-            '1. Notă estimativă (1–10 sau punctaj %) & Nivel CEFR constatat (suficient / sub B1 / peste B1)',
-            '2. Conținut & Îndeplinirea temei',
-            '3. Gramatică, topică & ortografie (greșeli exacte și cum se corectează)',
-            '4. Registru (Sie / du), salut și formula de încheiere',
-            '5. Ce trebuie îmbunătățit pentru B1',
-            '6. Varianta corectată complet la nivel B1',
+            'Evaluează scurt scrisoarea următoare în limba germană pentru nivelul B1.',
+            topic ? `Tema: ${topic}` : '',
+            `Registru: ${reg}`,
+            'Folosește exact aceste 4 secțiuni scurte:',
+            '1. Notă și nivel: [nota /10 și nivelul CEFR]',
+            '2. Greșeli pe scurt: [doar greșelile principale și varianta corectă]',
+            '3. Ce trebuie îmbunătățit: [1-2 idei scurte]',
+            '4. Varianta corectată B1: [scrisoarea corectată scurt și natural]',
             '',
             'Scrisoarea:',
             letter
-        ].join('\n');
+        ].filter(Boolean).join('\n');
 
         try {
-            const reply = await callGemini(prompt);
+            const reply = await callGemini(prompt, sysPrompt);
             outBox.textContent = reply || 'Răspuns gol de la AI.';
         } catch (e) {
             outBox.textContent = 'Eroare la evaluarea AI: ' + (e.message || 'verifică cheia API');
@@ -831,16 +857,14 @@
         }
 
         const prompt = [
-            'Evaluează următoarea scrisoare în limba germană pentru nivelul B1.',
-            topic ? `Tema/cerința: ${topic}` : 'Tema/cerința: liberă',
-            `Registru dorit: ${reg}`,
-            'Te rog să îmi spui:',
-            '1) Ce notă/calificativ estimativ ar primi și ce nivel CEFR reflectă.',
-            '2) Unde este greșit (gramatică, topică, ortografie, registru Sie/du, formulări) și cum se corectează.',
-            '3) Dacă este suficient pentru B1 și ce trebuie îmbunătățit.',
-            '4) Oferă la final o variantă corectată de nivel B1.',
+            'Evaluează scurt în limba română următoarea scrisoare în germană pentru nivelul B1:',
+            topic ? `Tema: ${topic}` : 'Tema: liberă',
+            `Registru: ${reg}`,
+            '1) Notă estimativă și nivel CEFR.',
+            '2) Greșeli și cum se corectează.',
+            '3) Ce trebuie îmbunătățit.',
+            '4) Varianta corectată la nivel B1.',
             '',
-            'Scrisoarea mea:',
             letter
         ].join('\n');
 
@@ -1103,6 +1127,8 @@
     function saveApiKey() {
         geminiKey = document.getElementById('cfg-api-key').value.trim();
         document.getElementById('cfg-api-key').value = geminiKey;
+        cachedWorkingAI = null;
+        localStorage.removeItem('gm_working_ai');
         const msg = document.getElementById('ai-key-msg');
         if (geminiKey) {
             localStorage.setItem('gm_gemini_key', geminiKey);
@@ -1134,6 +1160,8 @@
         config.font = document.getElementById('cfg-f1').value;
         config.rate = document.getElementById('cfg-rate').value;
         config.model = document.getElementById('cfg-model').value;
+        cachedWorkingAI = null;
+        localStorage.removeItem('gm_working_ai');
         document.getElementById('val-f1').innerText = config.font;
         document.body.style.background = config.bg;
         document.documentElement.style.setProperty('--f-size-read', config.font + 'px');
@@ -1421,8 +1449,8 @@
         const activeSel = window.getSelection().toString().trim();
         const target = activeSel || lastTransTarget || lastSavedSelection;
         const ctx = activeSel
-            ? document.getElementById('reader-display').innerText.slice(0, 240)
-            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 240));
+            ? document.getElementById('reader-display').innerText.slice(0, 200)
+            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 200));
 
         const box = document.getElementById('trans-box');
         const btn = document.getElementById('btn-ai-trans');
@@ -1439,11 +1467,12 @@
 
         btn.disabled = true;
         btn.textContent = '⏳ AI...';
-        box.innerText = '🤖 Se traduce cu AI...';
+        box.innerText = '🤖 Se traduce...';
 
         try {
-            const prompt = `Tradu din germană în română "${target}" ținând cont de contextul: "${ctx}". Răspunde concis în română (max 15 cuvinte).`;
-            const out = await callGemini(prompt);
+            const sysPrompt = 'Tradu STRICT în limba română. Oferă doar traducerea scurtă și exactă (maxim 12 cuvinte), fără engleză și fără explicații lungi.';
+            const prompt = `Text german: "${target}" (context: "${ctx}"). Traducere în română:`;
+            const out = await callGemini(prompt, sysPrompt);
             box.innerText = out ? `🤖 ${out}` : 'Răspuns gol de la AI.';
         } catch (e) {
             box.innerText = 'Eroare AI: ' + (e.message || 'verifică cheia API');
@@ -1462,7 +1491,7 @@
             return;
         }
         lastTransTarget = selected;
-        lastTransContext = document.getElementById('reader-display').innerText.slice(0, 240);
+        lastTransContext = document.getElementById('reader-display').innerText.slice(0, 200);
         box.innerText = '⚡ Se traduce...';
         const out = await fastTranslate(selected);
         box.innerText = out ? `⚡ ${out}` : 'Traducere indisponibilă.';
@@ -1480,7 +1509,7 @@
         if (!word) return;
 
         lastTransTarget = word;
-        lastTransContext = (el.parentElement ? el.parentElement.innerText : document.getElementById('reader-display').innerText).slice(0, 240);
+        lastTransContext = (el.parentElement ? el.parentElement.innerText : document.getElementById('reader-display').innerText).slice(0, 200);
         const info = document.getElementById('last-target-info');
         if (info) info.textContent = `Cuvânt: „${word}”`;
 
