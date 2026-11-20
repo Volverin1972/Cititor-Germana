@@ -592,7 +592,7 @@
         for (const [re, ro] of replacements) {
             out = out.replace(re, ro);
         }
-        return out.trim();
+        return out.replace(/`/g, '').replace(/\*+/g, '').trim();
     }
 
     function looksLikeEnglishLine(line) {
@@ -604,21 +604,22 @@
 
     function cleanAIOutput(raw) {
         let txt = String(raw || '')
-            .replace(/\*\*/g, '')
+            .replace(/`/g, '')
+            .replace(/\*+/g, '')
             .replace(/^\s*[-*•]+\s*/gm, '')
             .replace(/^\s*#{1,4}\s*/gm, '');
 
         const cutMarkers = [
             /\n\s*Romanian only\?[\s\S]*$/i,
             /\n\s*Strict translation\?[\s\S]*$/i,
-            /\n\s*\*?Self-correction:?\*?[\s\S]*$/i,
+            /\n\s*Self-correction:?[\s\S]*$/i,
             /\n\s*Ensure the tone is helpful[\s\S]*$/i
         ];
         for (const re of cutMarkers) {
             txt = txt.replace(re, '');
         }
 
-        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|\*?Text:\*?|\*?Errors:\*?|\*?Analysis:\*?|Target Language:|\[nota \/10, nivel CEFR\]|\[greșeală -> corectura, pe scurt\]|\[scrisoarea corectată în germană\])/i;
+        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|Text:|Errors:|Analysis:|Target Language:|\[nota \/10, nivel CEFR\]|\[greșeală -> corectura, pe scurt\]|\[scrisoarea corectată în germană\])/i;
         txt = txt
             .split('\n')
             .map(line => sanitizeEnglishFragments(line))
@@ -787,7 +788,7 @@
         const words = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
 
         const hasGreeting = /(sehr geehrte|hallo|liebe|lieber|guten tag|hi)\b/i.test(txt);
-        const hasClosing = /(mit freundlichen grüßen|viele grüße|freundliche grüße|bis bald|tschüss|liebe grüße)/i.test(txt);
+        const hasClosing = /(mit freundlichen grüßen|mit herzlichen grüßen|mit herztlichen grüßen|viele grüße|freundliche grüße|freundliche grüße|herzliche grüße|herztliche grüße|freundlich\w*|herzli\w*|herztli\w*|grüß\w*|gruß\w*|bis bald|tschüss|liebe grüße)/i.test(txt);
         const usesSie = /\b(sie|ihnen|ihr|ihre|ihren|ihrem)\b/i.test(txt);
         const usesDu = /\b(du|dir|dich|dein|deine|deinen|deinem)\b/i.test(txt);
         const registerConsistent = reg === 'Formal (Sie)' ? !(usesDu && !usesSie) : !(usesSie && !usesDu);
