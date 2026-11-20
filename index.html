@@ -567,14 +567,23 @@
     let lastTransContext = '';
 
     function sanitizeEnglishFragments(line) {
-        let out = String(line || '');
-        if (/^\s*\*?Analysis:\*?\s*$/i.test(out.trim())) return '';
+        let out = String(line || '').replace(/^\s*\*?Original:\*?\s*/i, '');
+        if (/^\s*\*?(Analysis|Target Language):\*?\s*/i.test(out.trim())) return '';
         const replacements = [
-            [/\bGrammatically okay,?\s*but\b/gi, 'Corect gramatical, dar'],
-            [/\bis better\b/gi, 'este mai natural'],
-            [/\bWord order\/Preposition\b/gi, 'ordine a cuvintelor / prepoziție'],
-            [/\bSpelling\/Compound\b/gi, 'ortografie / cuvânt compus'],
-            [/\bUmlaut\b/gi, 'umlaut'],
+            [/\bMissing comma\.?/gi, 'lipsește virgula'],
+            [/\bGrammatically okay,?\s*but\b/gi, 'corect gramatical, dar'],
+            [/\bis more formal\.?/gi, 'este mai formal'],
+            [/\bis better\.?/gi, 'este mai natural'],
+            [/\bWord order\/Preposition\b/gi, 'ordine a cuvintelor și prepoziție'],
+            [/\bword order,?\s*preposition usage\b/gi, 'ordine a cuvintelor și prepoziție'],
+            [/\bword order after 'deswegen'\s*-\s*verb in 2nd position,?\s*gender of 'Termin' is masculine\b/gi, 'după „deswegen” verbul este pe poziția 2, iar „Termin” este masculin'],
+            [/\bSpelling\/Compound\b/gi, 'ortografie și cuvânt compus'],
+            [/\bcompound noun,?\s*capitalization\b/gi, 'cuvânt compus, scriere cu majusculă'],
+            [/\bdative after 'nach',?\s*compound noun capitalization\b/gi, 'dativ după „nach”, cuvânt compus cu majusculă'],
+            [/\bmasculine accusative\b/gi, 'acuzativ masculin'],
+            [/\bneuter accusative\b/gi, 'acuzativ neutru'],
+            [/\bmore formal\b/gi, 'mai formal'],
+            [/\bumlaut\b/gi, 'umlaut'],
             [/\bAkkusativ,\s*maskulin\b/gi, 'acuzativ, masculin'],
             [/\bDativ,\s*Kompositum\b/gi, 'dativ, cuvânt compus'],
             [/\bNominativ,\s*maskulin\b/gi, 'nominativ, masculin'],
@@ -584,6 +593,13 @@
             out = out.replace(re, ro);
         }
         return out.trim();
+    }
+
+    function looksLikeEnglishLine(line) {
+        const s = String(line || '').trim();
+        if (!s) return false;
+        if (/^(Target Language|Original|Analysis|Input|Task|Constraints|Format):/i.test(s)) return true;
+        return /\b(missing comma|masculine|neuter|accusative|dative|nominative|word order|preposition|spelling|compound|capitalization|grammatically|more formal|is better|the letter|your letter|after ')\b/i.test(s);
     }
 
     function cleanAIOutput(raw) {
@@ -602,7 +618,7 @@
             txt = txt.replace(re, '');
         }
 
-        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|\*?Text:\*?|\*?Errors:\*?|\*?Analysis:\*?|\[nota \/10, nivel CEFR\]|\[greșeală -> corectura, pe scurt\]|\[scrisoarea corectată în germană\])/i;
+        const noiseLine = /^(Input:|Task:|Constraints:|Language:|No English\.|No asterisks|Very short and direct\.|Format:|\*?Text:\*?|\*?Errors:\*?|\*?Analysis:\*?|Target Language:|\[nota \/10, nivel CEFR\]|\[greșeală -> corectura, pe scurt\]|\[scrisoarea corectată în germană\])/i;
         txt = txt
             .split('\n')
             .map(line => sanitizeEnglishFragments(line))
@@ -612,6 +628,26 @@
             .trim();
 
         return txt;
+    }
+
+    async function localizeRemainingEnglishInText(text) {
+        const lines = String(text || '').split('\n');
+        const hasEnglish = lines.some(l => looksLikeEnglishLine(l));
+        if (!hasEnglish || !geminiKey) return text;
+
+        const cleanedLines = lines.filter(l => !/^Target Language:/i.test(l.trim()));
+        const payloadText = cleanedLines.join('\n').trim();
+        if (!payloadText) return text;
+
+        try {
+            const sysPrompt = 'Traduce în limba română orice explicație sau etichetă în engleză din textul dat, păstrând forma scurtă și exactă.';
+            const prompt = `Rescrie textul de mai jos astfel încât TOATE observațiile și explicațiile să fie în limba română (păstrează expresiile în germană din corectură):\n\n${payloadText}`;
+            const translated = await callGemini(prompt, sysPrompt, 9000, 500);
+            const finalClean = cleanAIOutput(translated);
+            return finalClean || payloadText;
+        } catch {
+            return payloadText;
+        }
     }
 
     async function fetchWithTimeout(url, options, timeoutMs = 10000) {
@@ -889,23 +925,24 @@
         outBox.classList.remove('hidden');
         outBox.textContent = 'Se analizează scrisoarea...';
 
-        const sysPrompt = 'Ești profesor de limba germană pentru vorbitori de limba română. Scrie TOATE explicațiile, notițele și observațiile DOAR în limba română (niciodată în engleză). Doar textul scrisorii corectate din secțiunea finală este în germană.';
+        const sysPrompt = 'Scrie răspunsul în limba română. Toate explicațiile gramaticale și titlurile secțiunilor trebuie să fie în română; doar scrisoarea corectată la final este în germană.';
         const prompt = [
-            'Corectează scurt scrisoarea de mai jos (nivel B1) și scrie explicațiile în română.',
+            'Evaluează scurt în limba română următoarea scrisoare în germană (nivel B1).',
             topic ? `Tema: ${topic}` : '',
             `Registru: ${reg}`,
-            'Completează direct valorile (nu copia parantezele pătrate):',
-            'Notă și nivel: scrie nota din 10 și nivelul CEFR',
-            'Greșeli: enumeră fiecare greșeală -> varianta corectă (explicația pe scurt în română)',
-            'Corectură B1: scrisoarea corectată în germană',
+            'Folosește exact aceste secțiuni în română:',
+            'Notă și nivel:',
+            'Greșeli:',
+            'Corectură B1:',
             '',
-            'Scrisoare:',
+            'Textul scrisorii:',
             letter
         ].filter(Boolean).join('\n');
 
         try {
             const reply = await callGemini(prompt, sysPrompt, 12000, 450);
-            outBox.textContent = reply || 'Răspuns gol de la AI.';
+            const localized = await localizeRemainingEnglishInText(reply);
+            outBox.textContent = localized || 'Răspuns gol de la AI.';
         } catch (e) {
             outBox.textContent = 'Eroare la evaluarea AI: ' + (e.message || 'verifică cheia API');
         } finally {
