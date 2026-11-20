@@ -339,11 +339,11 @@
         <span class="hub-badge">Atelier Liber B1</span>
         <h2 style="margin:4px 0 6px 0;">✍️ Scrie scrisoarea ta în germană</h2>
         <p style="color:var(--text-muted); margin:0 0 12px 0; font-size:14px;">
-            Scrie scrisoarea aici și apasă <b>Evaluează cu AI</b> pentru corecție pe loc sau <b>Copiază pentru evaluare B1</b>.
+            Scrie scrisoarea aici și apasă <b>Evaluează cu AI</b> pentru rubrica de verificare și notare B1, sau <b>Copiază pentru evaluare B1</b>.
         </p>
 
         <label style="font-weight:700; font-size:13px; display:block; margin-bottom:4px;">Tema / Cerința (opțional)</label>
-        <input id="free-topic" type="text" placeholder="Ex: Amânarea unei programări la medic" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; font-size:14px;">
+        <input id="free-topic" type="text" placeholder="Ex: Cerere concediu / Amânarea unei programări" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; font-size:14px;">
 
         <label style="font-weight:700; font-size:13px; display:block; margin-bottom:4px;">Registru vizat</label>
         <select id="free-register" onchange="analyzeFreeLetter()" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:12px; font-size:14px;">
@@ -418,11 +418,12 @@
     <select id="cfg-model" onchange="applyCfg()">
         <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
     </select>
     <div id="ai-key-msg" style="font-size:12px; color:var(--main-green-dark); margin-top:6px; font-weight:600;"></div>
 
     <hr>
-    <h3>✉️ Adaugă Lecție Scrisoare B1</h3>
+    <h3>✉️ Adaugă Lecție Ghidată B1</h3>
     <label>Titlu lecție</label>
     <input type="text" id="let-title" placeholder="Ex: Cerere concediu">
     <label>Tip</label>
@@ -708,21 +709,42 @@
         if (!cleanKey) {
             throw new Error('Lipsă cheie Gemini API (adaug-o în ⚙️).');
         }
-        const m = (config.model || 'gemini-2.5-flash').trim();
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: promptText }] }],
-                generationConfig: { temperature: 0.2 }
-            })
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
+        const preferred = (config.model || 'gemini-2.5-flash').trim();
+        const candidates = [preferred, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v, idx, arr) => v && arr.indexOf(v) === idx);
+        const versions = ['v1beta', 'v1'];
+        let lastStatus = '';
+
+        for (let v = 0; v < versions.length; v++) {
+            for (let m = 0; m < candidates.length; m++) {
+                const ver = versions[v];
+                const modelName = candidates[m];
+                const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: promptText }] }],
+                            generationConfig: { temperature: 0.2 }
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const textOut = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+                        if (textOut) return textOut;
+                    } else {
+                        lastStatus = `HTTP ${res.status} (${ver}/${modelName})`;
+                        if (res.status === 401 || res.status === 403) {
+                            throw new Error(`Cheie API neautorizată (${res.status}). Verifică cheia din ⚙️.`);
+                        }
+                    }
+                } catch (err) {
+                    if (String(err.message || '').indexOf('Cheie API') === 0) throw err;
+                    lastStatus = err.message || 'Eroare rețea';
+                }
+            }
         }
-        const data = await res.json();
-        return (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+        throw new Error(lastStatus || 'Răspuns indisponibil de la Gemini AI.');
     }
 
     async function evaluateFreeLetterWithAI() {
@@ -745,16 +767,20 @@
         btn.disabled = true;
         btn.textContent = '⏳ Se evaluează...';
         outBox.classList.remove('hidden');
-        outBox.textContent = 'Se evaluează scrisoarea pentru nivelul B1...';
+        outBox.textContent = 'Se analizează scrisoarea și se generează rubrica de verificare B1...';
 
         const prompt = [
-            'Evaluează următoarea scrisoare în germană pentru nivelul B1 și răspunde în română:',
-            topic ? `Tema: ${topic}` : 'Tema: liberă',
-            `Registru: ${reg}`,
-            '1) Notă estimativă și nivel CEFR (dacă este suficient pentru B1)',
-            '2) Greșeli găsite și cum se corectează',
-            '3) Ce mai trebuie îmbunătățit',
-            '4) Varianta corectată la nivel B1',
+            'Evaluează următoarea scrisoare în limba germană pentru nivelul B1 și răspunde în română, structurat clar:',
+            topic ? `Tema / cerința: ${topic}` : 'Tema / cerința: liberă',
+            `Registru vizat: ${reg}`,
+            '',
+            'RUBRICĂ DE VERIFICARE ȘI NOTARE B1:',
+            '1. Notă estimativă (1–10 sau punctaj %) & Nivel CEFR constatat (suficient / sub B1 / peste B1)',
+            '2. Conținut & Îndeplinirea temei',
+            '3. Gramatică, topică & ortografie (greșeli exacte și cum se corectează)',
+            '4. Registru (Sie / du), salut și formula de încheiere',
+            '5. Ce trebuie îmbunătățit pentru B1',
+            '6. Varianta corectată complet la nivel B1',
             '',
             'Scrisoarea:',
             letter
@@ -999,7 +1025,7 @@
         }).filter(s => s.options.length > 0);
 
         if (!parsedSteps.length) {
-            alert('Verifică formatul pașilor.');
+            alert('Verifică formatul pașilor (ex: "1. Salut | Hint" urmat de "Text | true | Explicație").');
             return;
         }
 
@@ -1069,7 +1095,11 @@
         document.getElementById('cfg-bg').value = config.bg || '#f0f2f5';
         document.getElementById('cfg-f1').value = config.font || '22';
         document.getElementById('cfg-rate').value = config.rate || '1';
-        document.getElementById('cfg-model').value = config.model || 'gemini-2.5-flash';
+        const selModel = document.getElementById('cfg-model');
+        if (selModel) {
+            const exists = Array.from(selModel.options).some(opt => opt.value === (config.model || 'gemini-2.5-flash'));
+            selModel.value = exists ? (config.model || 'gemini-2.5-flash') : 'gemini-2.5-flash';
+        }
         document.getElementById('cfg-api-key').value = geminiKey;
         if (geminiKey) {
             document.getElementById('ai-key-msg').textContent = '✓ Cheia Gemini API este salvată.';
@@ -1489,4 +1519,3 @@
 </script>
 </body>
 </html>
-r
