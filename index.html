@@ -566,10 +566,22 @@
     let lastTransContext = '';
 
     function cleanAIOutput(raw) {
-        return String(raw || '')
+        let txt = String(raw || '')
             .replace(/\*\*/g, '')
-            .replace(/^\s*#{1,4}\s*/gm, '')
-            .trim();
+            .replace(/^\s*\*\s+/gm, '• ')
+            .replace(/^\s*\*\s*/gm, '')
+            .replace(/^\s*#{1,4}\s*/gm, '');
+
+        const cutMarkers = [
+            /\n\s*•?\s*Romanian only\?[\s\S]*$/i,
+            /\n\s*•?\s*Strict translation\?[\s\S]*$/i,
+            /\n\s*\*?Self-correction:?\*?[\s\S]*$/i,
+            /\n\s*Ensure the tone is helpful[\s\S]*$/i
+        ];
+        for (const re of cutMarkers) {
+            txt = txt.replace(re, '');
+        }
+        return txt.trim();
     }
 
     document.addEventListener('selectionchange', () => {
@@ -712,11 +724,14 @@
         ).join('');
     }
 
-    async function requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction) {
+    async function requestModelEndpoint(ver, modelName, cleanKey, promptText, systemInstruction, maxTokens = 450) {
         const url = `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(cleanKey)}`;
         const payload = {
             contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: { temperature: 0.15 }
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: maxTokens
+            }
         };
         if (systemInstruction && ver === 'v1beta') {
             payload.systemInstruction = { parts: [{ text: systemInstruction }] };
@@ -728,7 +743,8 @@
         });
         if (res.ok) {
             const data = await res.json();
-            const textOut = cleanAIOutput(data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+            const parts = data.candidates?.[0]?.content?.parts || [];
+            const textOut = cleanAIOutput(parts.map(p => p.text || '').join('\n'));
             if (textOut) return textOut;
             throw new Error('Răspuns gol de la AI.');
         }
@@ -819,18 +835,17 @@
         outBox.classList.remove('hidden');
         outBox.textContent = 'Se analizează scrisoarea...';
 
-        const sysPrompt = 'Ești profesor de germană B1. Răspunde STRICT în limba română (fără engleză, fără asteriscuri, fără variante alternative multiple). Fii scurt, clar și direct.';
+        const sysPrompt = 'Răspunde DOAR în română. Fără engleză. Fără asteriscuri. Fii foarte scurt și direct.';
         const prompt = [
-            'Evaluează scurt scrisoarea următoare în limba germană pentru nivelul B1.',
+            'Evaluează scurt scrisoarea în germană (nivel B1).',
             topic ? `Tema: ${topic}` : '',
             `Registru: ${reg}`,
-            'Folosește exact aceste 4 secțiuni scurte:',
-            '1. Notă și nivel: [nota /10 și nivelul CEFR]',
-            '2. Greșeli pe scurt: [doar greșelile principale și varianta corectă]',
-            '3. Ce trebuie îmbunătățit: [1-2 idei scurte]',
-            '4. Varianta corectată B1: [scrisoarea corectată scurt și natural]',
+            'Scrie exact:',
+            'Notă și nivel: [nota /10, nivel CEFR]',
+            'Greșeli: [greșeală -> corectura, pe scurt]',
+            'Corectură B1: [scrisoarea corectată scurt]',
             '',
-            'Scrisoarea:',
+            'Text:',
             letter
         ].filter(Boolean).join('\n');
 
@@ -1449,8 +1464,8 @@
         const activeSel = window.getSelection().toString().trim();
         const target = activeSel || lastTransTarget || lastSavedSelection;
         const ctx = activeSel
-            ? document.getElementById('reader-display').innerText.slice(0, 200)
-            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 200));
+            ? document.getElementById('reader-display').innerText.slice(0, 180)
+            : (lastTransContext || document.getElementById('reader-display').innerText.slice(0, 180));
 
         const box = document.getElementById('trans-box');
         const btn = document.getElementById('btn-ai-trans');
@@ -1470,10 +1485,11 @@
         box.innerText = '🤖 Se traduce...';
 
         try {
-            const sysPrompt = 'Tradu STRICT în limba română. Oferă doar traducerea scurtă și exactă (maxim 12 cuvinte), fără engleză și fără explicații lungi.';
-            const prompt = `Text german: "${target}" (context: "${ctx}"). Traducere în română:`;
+            const sysPrompt = 'Tradu DOAR în limba română. Scrie doar traducerea scurtă (1-8 cuvinte), fără engleză și fără explicații.';
+            const prompt = `Germană: "${target}" | Context: "${ctx}"\nTraducere în română:`;
             const out = await callGemini(prompt, sysPrompt);
-            box.innerText = out ? `🤖 ${out}` : 'Răspuns gol de la AI.';
+            const firstLine = (out || '').split('\n').map(l => l.trim()).filter(Boolean).pop() || out;
+            box.innerText = firstLine ? `🤖 ${firstLine}` : 'Răspuns gol de la AI.';
         } catch (e) {
             box.innerText = 'Eroare AI: ' + (e.message || 'verifică cheia API');
         } finally {
